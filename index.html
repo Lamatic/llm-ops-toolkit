@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LLM Ops Toolkit — by Lamatic.ai</title>
+  <meta name="description" content="Interactive tools for managing 20+ LLM APIs in production. Cost calculator, diversity audit, and routing simulator." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ======== HEADER ======== -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo-area">
+        <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-label="LLM Ops Toolkit Logo">
+          <rect x="2" y="2" width="28" height="28" rx="6" stroke="#58A6FF" stroke-width="1.5"/>
+          <circle cx="10" cy="10" r="2.5" fill="#58A6FF"/>
+          <circle cx="22" cy="10" r="2.5" fill="#58A6FF"/>
+          <circle cx="10" cy="22" r="2.5" fill="#58A6FF"/>
+          <circle cx="22" cy="22" r="2.5" fill="#58A6FF"/>
+          <circle cx="16" cy="16" r="3" fill="#58A6FF" opacity="0.6"/>
+          <line x1="10" y1="10" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
+          <line x1="22" y1="10" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
+          <line x1="10" y1="22" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
+          <line x1="22" y1="22" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
+          <line x1="10" y1="10" x2="22" y2="10" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
+          <line x1="22" y1="10" x2="22" y2="22" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
+          <line x1="22" y1="22" x2="10" y2="22" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
+          <line x1="10" y1="22" x2="10" y2="10" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
+        </svg>
+        <div class="logo-text">
+          <h1>LLM Ops Toolkit</h1>
+          <span class="logo-subtitle">by Lamatic.ai</span>
+        </div>
+      </div>
+      <nav class="tab-nav" role="tablist">
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="calculator">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Cost Calculator
+        </button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="audit">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 3h4l-3 3 1 4-4-2-4 2 1-4-3-3h4l2-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+          Diversity Audit
+        </button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="simulator">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8h3l2-5 2 10 2-7 2 4h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Routing Simulator
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- ======== MAIN CONTENT ======== -->
+  <main class="main">
+
+    <!-- ===== TAB 1: COST CALCULATOR ===== -->
+    <section id="tab-calculator" class="tab-panel active" role="tabpanel">
+      <div class="section-header">
+        <h2>LLM Cost Calculator</h2>
+        <p class="section-desc">Discover the true cost of managing multiple LLM providers — beyond API bills.</p>
+      </div>
+
+      <div class="calc-layout">
+        <!-- Inputs -->
+        <div class="calc-inputs">
+          <div class="input-card">
+            <h3>Configuration</h3>
+
+            <div class="input-group">
+              <label for="numProviders">Number of LLM Providers</label>
+              <div class="slider-row">
+                <input type="range" id="numProviders" min="1" max="30" value="5" />
+                <span class="slider-value mono" id="numProvidersVal">5</span>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="monthlySpend">Monthly API Spend</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">$</span>
+                <input type="number" id="monthlySpend" value="10000" min="0" step="500" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="teamSize">Engineering Team Size (AI/ML)</label>
+              <div class="slider-row">
+                <input type="range" id="teamSize" min="1" max="50" value="5" />
+                <span class="slider-value mono" id="teamSizeVal">5</span>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="avgSalary">Avg Engineer Salary</label>
+              <div class="input-with-prefix">
+                <span class="input-prefix">$</span>
+                <input type="number" id="avgSalary" value="180000" min="0" step="5000" />
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="opsTime">% Time on Model Operations</label>
+              <div class="slider-row">
+                <input type="range" id="opsTime" min="0" max="100" value="35" />
+                <span class="slider-value mono" id="opsTimeVal">35%</span>
+              </div>
+            </div>
+
+            <div class="input-group">
+              <label for="maturity">LLMOps Maturity</label>
+              <select id="maturity">
+                <option value="new">New to LLMOps</option>
+                <option value="some">Some tooling</option>
+                <option value="mature">Mature platform</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Outputs -->
+        <div class="calc-outputs">
+          <!-- Card 1: True Cost Analysis -->
+          <div class="output-card">
+            <h3>True Cost Analysis</h3>
+            <div class="cost-rows">
+              <div class="cost-row">
+                <span class="cost-label">Monthly API Spend</span>
+                <span class="cost-value mono" id="out-apiSpend">$10,000</span>
+              </div>
+              <div class="cost-row">
+                <span class="cost-label">TCO Multiplier</span>
+                <span class="cost-value mono accent" id="out-multiplier">3.2×</span>
+              </div>
+              <div class="cost-row highlight">
+                <span class="cost-label">True Monthly Cost</span>
+                <span class="cost-value mono" id="out-trueCost">$32,000</span>
+              </div>
+              <div class="cost-row warning">
+                <span class="cost-label">Hidden Monthly Cost</span>
+                <span class="cost-value mono" id="out-hiddenCost">$22,000</span>
+              </div>
+              <div class="cost-row big-number">
+                <span class="cost-label">Annual Hidden Cost</span>
+                <span class="cost-value mono error" id="out-annualHidden">$264,000</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 2: Engineering Opportunity Cost -->
+          <div class="output-card">
+            <h3>Engineering Opportunity Cost</h3>
+            <div class="cost-rows">
+              <div class="cost-row big-number">
+                <span class="cost-label">Annual Cost on Model Ops</span>
+                <span class="cost-value mono warning-text" id="out-engCost">$315,000</span>
+              </div>
+              <div class="cost-row">
+                <span class="cost-label">$ on Infrastructure vs Product</span>
+                <span class="cost-value mono" id="out-infraCost">$315,000</span>
+              </div>
+              <div class="cost-row">
+                <span class="cost-label">Per-Provider Overhead</span>
+                <span class="cost-value mono" id="out-providerOverhead">17.5 eng-days/yr</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Potential Savings -->
+          <div class="output-card savings-card">
+            <h3>Potential Savings with Routing</h3>
+            <p class="card-note">If 70% of requests routed to cheaper models:</p>
+            <div class="savings-grid">
+              <div class="savings-item">
+                <span class="savings-label">Conservative (30%)</span>
+                <span class="savings-value mono success" id="out-conservative">$36,000/yr</span>
+              </div>
+              <div class="savings-item">
+                <span class="savings-label">Optimistic (70%)</span>
+                <span class="savings-value mono success" id="out-optimistic">$84,000/yr</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 4: Summary Dashboard -->
+          <div class="output-card summary-card">
+            <h3>Summary Dashboard</h3>
+            <div class="kpi-grid">
+              <div class="kpi-item">
+                <span class="kpi-value mono" id="kpi-hiddenCost">$264K</span>
+                <span class="kpi-label">Annual Hidden Cost</span>
+              </div>
+              <div class="kpi-item">
+                <span class="kpi-value mono" id="kpi-engDays">17.5</span>
+                <span class="kpi-label">Eng-Days Lost to Ops</span>
+              </div>
+              <div class="kpi-item">
+                <span class="kpi-value mono success" id="kpi-savings">$36K</span>
+                <span class="kpi-label">Potential Annual Savings</span>
+              </div>
+              <div class="kpi-item">
+                <span class="kpi-value mono accent" id="kpi-roi">3.0×</span>
+                <span class="kpi-label">ROI of Gateway</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB 2: DIVERSITY AUDIT ===== -->
+    <section id="tab-audit" class="tab-panel" role="tabpanel">
+      <div class="section-header">
+        <h2>Model Diversity Maturity Audit</h2>
+        <p class="section-desc">Assess your organization's LLM operations maturity with 10 targeted questions.</p>
+      </div>
+
+      <div class="audit-layout">
+        <div class="audit-questions" id="auditQuestions">
+          <!-- Questions injected by JS -->
+        </div>
+
+        <div class="audit-results" id="auditResults" style="display:none;">
+          <div class="result-score-card">
+            <div class="score-ring-container">
+              <svg class="score-ring" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" stroke="#30363D" stroke-width="8" fill="none"/>
+                <circle id="scoreRingCircle" cx="60" cy="60" r="52" stroke="#58A6FF" stroke-width="8" fill="none"
+                  stroke-dasharray="326.73" stroke-dashoffset="326.73" stroke-linecap="round"
+                  transform="rotate(-90 60 60)"/>
+              </svg>
+              <div class="score-text">
+                <span class="score-number mono" id="scoreNumber">0</span>
+                <span class="score-total">/30</span>
+              </div>
+            </div>
+            <div class="maturity-badge" id="maturityBadge">Ad Hoc</div>
+            <p class="maturity-desc" id="maturityDesc"></p>
+          </div>
+
+          <div class="result-details">
+            <div class="recommendations-card output-card">
+              <h3>Recommendations</h3>
+              <ul id="recommendationsList"></ul>
+            </div>
+
+            <div class="radar-card output-card">
+              <h3>Capability Radar</h3>
+              <div class="radar-container">
+                <canvas id="radarChart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn-primary retake-btn" id="retakeBtn">Retake Assessment</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== TAB 3: ROUTING SIMULATOR ===== -->
+    <section id="tab-simulator" class="tab-panel" role="tabpanel">
+      <div class="section-header">
+        <h2>Routing Simulator</h2>
+        <p class="section-desc">Visualize how intelligent routing distributes requests across models.</p>
+      </div>
+
+      <!-- Model Cards -->
+      <div class="model-cards-row">
+        <div class="model-card" data-model="gpt4o">
+          <div class="model-indicator" style="background:#58A6FF;"></div>
+          <h4>GPT-4o</h4>
+          <div class="model-stats">
+            <span class="mono">$0.005/1K</span>
+            <span>Quality <strong class="mono">95</strong></span>
+            <span>Latency <strong class="mono">800ms</strong></span>
+          </div>
+          <div class="model-traffic-bar"><div class="model-traffic-fill" id="traffic-gpt4o"></div></div>
+          <span class="model-traffic-pct mono" id="pct-gpt4o">0%</span>
+        </div>
+        <div class="model-card" data-model="claude">
+          <div class="model-indicator" style="background:#D2A8FF;"></div>
+          <h4>Claude 3.5 Sonnet</h4>
+          <div class="model-stats">
+            <span class="mono">$0.003/1K</span>
+            <span>Quality <strong class="mono">93</strong></span>
+            <span>Latency <strong class="mono">600ms</strong></span>
+          </div>
+          <div class="model-traffic-bar"><div class="model-traffic-fill" id="traffic-claude"></div></div>
+          <span class="model-traffic-pct mono" id="pct-claude">0%</span>
+        </div>
+        <div class="model-card" data-model="gemini">
+          <div class="model-indicator" style="background:#3FB950;"></div>
+          <h4>Gemini Pro</h4>
+          <div class="model-stats">
+            <span class="mono">$0.00125/1K</span>
+            <span>Quality <strong class="mono">88</strong></span>
+            <span>Latency <strong class="mono">500ms</strong></span>
+          </div>
+          <div class="model-traffic-bar"><div class="model-traffic-fill" id="traffic-gemini"></div></div>
+          <span class="model-traffic-pct mono" id="pct-gemini">0%</span>
+        </div>
+        <div class="model-card" data-model="llama">
+          <div class="model-indicator" style="background:#F0883E;"></div>
+          <h4>Llama 3.1 70B</h4>
+          <div class="model-stats">
+            <span class="mono">$0.0009/1K</span>
+            <span>Quality <strong class="mono">85</strong></span>
+            <span>Latency <strong class="mono">400ms</strong></span>
+          </div>
+          <div class="model-traffic-bar"><div class="model-traffic-fill" id="traffic-llama"></div></div>
+          <span class="model-traffic-pct mono" id="pct-llama">0%</span>
+        </div>
+        <div class="model-card" data-model="mini">
+          <div class="model-indicator" style="background:#F85149;"></div>
+          <h4>GPT-4o-mini</h4>
+          <div class="model-stats">
+            <span class="mono">$0.00015/1K</span>
+            <span>Quality <strong class="mono">78</strong></span>
+            <span>Latency <strong class="mono">200ms</strong></span>
+          </div>
+          <div class="model-traffic-bar"><div class="model-traffic-fill" id="traffic-mini"></div></div>
+          <span class="model-traffic-pct mono" id="pct-mini">0%</span>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="sim-controls">
+        <div class="control-group">
+          <label for="complexity">Request Complexity</label>
+          <div class="slider-row">
+            <input type="range" id="complexity" min="0" max="2" value="1" step="1" />
+            <span class="slider-value" id="complexityVal">Medium</span>
+          </div>
+        </div>
+        <div class="control-group">
+          <label for="volume">Monthly Request Volume</label>
+          <div class="slider-row">
+            <input type="range" id="volume" min="10000" max="1000000" value="100000" step="10000" />
+            <span class="slider-value mono" id="volumeVal">100K</span>
+          </div>
+        </div>
+        <div class="control-group">
+          <label for="strategy">Routing Strategy</label>
+          <select id="strategy">
+            <option value="frontier">Always Frontier</option>
+            <option value="cost" selected>Cost-Optimized Routing</option>
+            <option value="quality">Quality-First Routing</option>
+            <option value="balanced">Balanced</option>
+          </select>
+        </div>
+        <button class="btn-primary sim-run-btn" id="runSimBtn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 2l10 6-10 6V2z" fill="currentColor"/></svg>
+          Run Simulation
+        </button>
+      </div>
+
+      <!-- Flow Visualization -->
+      <div class="sim-flow-area" id="simFlowArea" style="display:none;">
+        <canvas id="flowCanvas"></canvas>
+      </div>
+
+      <!-- Results Dashboard -->
+      <div class="sim-results" id="simResults" style="display:none;">
+        <div class="sim-kpi-grid">
+          <div class="sim-kpi">
+            <span class="sim-kpi-label">Monthly Cost (Frontier)</span>
+            <span class="sim-kpi-value mono" id="sim-frontierCost">$0</span>
+          </div>
+          <div class="sim-kpi highlight">
+            <span class="sim-kpi-label">Monthly Cost (Current Strategy)</span>
+            <span class="sim-kpi-value mono success" id="sim-strategyCost">$0</span>
+          </div>
+          <div class="sim-kpi">
+            <span class="sim-kpi-label">Cost Savings</span>
+            <span class="sim-kpi-value mono success" id="sim-savings">0%</span>
+          </div>
+          <div class="sim-kpi">
+            <span class="sim-kpi-label">Avg Quality Score</span>
+            <span class="sim-kpi-value mono accent" id="sim-quality">0</span>
+          </div>
+          <div class="sim-kpi">
+            <span class="sim-kpi-label">Avg Latency</span>
+            <span class="sim-kpi-value mono" id="sim-latency">0ms</span>
+          </div>
+        </div>
+
+        <!-- Distribution Chart -->
+        <div class="sim-chart-area output-card">
+          <h3>Request Distribution</h3>
+          <div class="dist-bars" id="distBars">
+            <!-- Injected by JS -->
+          </div>
+        </div>
+
+        <!-- Comparison Summary -->
+        <div class="sim-summary output-card" id="simSummary">
+          <p id="simSummaryText"></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======== FOOTER ======== -->
+  <footer class="footer">
+    <p>Built for: <strong>The Hidden Cost of Model Diversity</strong> | Orlando Code Camp 2026</p>
+    <p>Powered by <a href="https://lamatic.ai" target="_blank" rel="noopener noreferrer">Lamatic.ai</a> — End-to-End Agent Development Platform</p>
+  </footer>
+
+  <script src="app.js"></script>
+<script data-pplx-inline-edit>
+(function(){
+  if(window===window.top)return;
+  function inlineAll(orig,clone){
+    if(orig.nodeType!==1)return;
+    try{
+      var cs=getComputedStyle(orig);
+      var t='';
+      for(var i=0;i<cs.length;i++){t+=cs[i]+':'+cs.getPropertyValue(cs[i])+';';}
+      clone.style.cssText=t;
+    }catch(e){}
+    var oc=orig.children,cc=clone.children;
+    for(var j=0;j<oc.length&&j<cc.length;j++){inlineAll(oc[j],cc[j]);}
+  }
+  function stripExternal(clone){
+    var imgs=clone.querySelectorAll('img');
+    for(var i=0;i<imgs.length;i++){
+      var s=imgs[i].getAttribute('src');
+      if(s&&!s.startsWith('data:'))imgs[i].removeAttribute('src');
+    }
+    var all=clone.querySelectorAll('*');
+    for(var i=0;i<all.length;i++){
+      var st=all[i].style.cssText;
+      if(st&&st.indexOf('url(')>=0){
+        all[i].style.cssText=st.replace(/url\(["']?(?!data:)[^)"']*["']?\)/gi,'none');
+      }
+    }
+  }
+  window.addEventListener('message',function(e){
+    if(!e.data||e.data.type!=='INLINE_EDIT_CAPTURE_REQUEST')return;
+    var scrollX=window.scrollX||window.pageXOffset||0;
+    var scrollY=window.scrollY||window.pageYOffset||0;
+    var w=window.innerWidth,h=window.innerHeight;
+    try{
+      var clone=document.documentElement.cloneNode(true);
+      var rm=clone.querySelectorAll('script,link[rel="stylesheet"],style');
+      for(var i=0;i<rm.length;i++){rm[i].remove();}
+      inlineAll(document.documentElement,clone);
+      stripExternal(clone);
+      var html=new XMLSerializer().serializeToString(clone);
+      var svg='<svg xmlns="http://www.w3.org/2000/svg" width="'+w+'" height="'+h+'">'
+        +'<foreignObject width="100%" height="100%">'
+        +'<div xmlns="http://www.w3.org/1999/xhtml" style="width:'+w+'px;height:'+h+'px;overflow:hidden">'
+        +'<div style="transform:translate(-'+scrollX+'px,-'+scrollY+'px);transform-origin:top left">'
+        +html+'</div></div></foreignObject></svg>';
+      var svgUrl='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+      var img=new Image();
+      img.onload=function(){
+        var c=document.createElement('canvas');c.width=w;c.height=h;
+        c.getContext('2d').drawImage(img,0,0);
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:c.toDataURL('image/png'),scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.onerror=function(){
+        window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+      };
+      img.src=svgUrl;
+    }catch(err){
+      window.parent.postMessage({type:'INLINE_EDIT_SCREENSHOT_RESULT',dataUrl:null,scrollX:scrollX,scrollY:scrollY},'*');
+    }
+  });
+})();
+</script></body>
+</html>

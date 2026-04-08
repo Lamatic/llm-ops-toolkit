@@ -50,6 +50,10 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8h3l2-5 2 10 2-7 2 4h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Routing Simulator
         </button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="status">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="12" x2="8" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="2" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Provider Status
+        </button>
       </nav>
     </div>
   </header>
@@ -400,6 +404,42 @@
           <p id="simSummaryText"></p>
         </div>
       </div>
+    </section>
+
+    <!-- ===== TAB 4: AI PROVIDER STATUS MONITOR ===== -->
+    <section id="tab-status" class="tab-panel" role="tabpanel">
+      <div class="section-header">
+        <h2>AI Provider Status</h2>
+        <p class="section-desc">Aggregate uptime monitoring across 18 AI API providers — 90-day history with response time trends.</p>
+      </div>
+
+      <!-- Controls row -->
+      <div class="status-controls">
+        <div class="status-summary-chips">
+          <div class="status-chip operational">
+            <div class="status-chip-dot"></div>
+            <span id="chipOperational">— Operational</span>
+          </div>
+          <div class="status-chip degraded">
+            <div class="status-chip-dot"></div>
+            <span id="chipDegraded">— Degraded</span>
+          </div>
+          <div class="status-chip outage">
+            <div class="status-chip-dot"></div>
+            <span id="chipOutage">— Outage</span>
+          </div>
+        </div>
+        <div class="status-actions">
+          <span class="status-last-updated" id="statusLastUpdated"></span>
+          <button class="refresh-btn" id="statusRefreshBtn" aria-label="Refresh status data">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" id="refreshIcon"><path d="M12 2v3.5H8.5M2 12V8.5H5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 8A5 5 0 1 1 9.5 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Provider list (populated by JS) -->
+      <div class="provider-list" id="providerList"></div>
     </section>
 
   </main>

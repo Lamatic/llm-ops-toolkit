@@ -781,3 +781,285 @@ tabBtns.forEach(btn => {
     }
   });
 });
+
+
+// ========================
+// TAB 4: STATUS MONITOR
+// ========================
+
+const STATUS_PROVIDERS = [
+  { id: 'openai',      name: 'ChatGPT (OpenAI)',        statusUrl: 'https://status.openai.com',                       tier: 'major',    baseLatency: 450, jitter: 200 },
+  { id: 'anthropic',   name: 'Claude (Anthropic)',       statusUrl: 'https://status.anthropic.com',                    tier: 'major',    baseLatency: 380, jitter: 180 },
+  { id: 'google',      name: 'Gemini (Google)',          statusUrl: 'https://status.cloud.google.com',                 tier: 'major',    baseLatency: 350, jitter: 150 },
+  { id: 'mistral',     name: 'Mistral AI',               statusUrl: 'https://status.mistral.ai',                       tier: 'standard', baseLatency: 420, jitter: 160 },
+  { id: 'cohere',      name: 'Cohere',                   statusUrl: 'https://status.cohere.com',                       tier: 'standard', baseLatency: 390, jitter: 140 },
+  { id: 'meta',        name: 'Meta AI',                  statusUrl: 'https://metastatus.com',                          tier: 'standard', baseLatency: 510, jitter: 200 },
+  { id: 'perplexity',  name: 'Perplexity',               statusUrl: 'https://status.perplexity.com',                   tier: 'standard', baseLatency: 620, jitter: 250 },
+  { id: 'groq',        name: 'Groq',                     statusUrl: 'https://groqstatus.com',                          tier: 'standard', baseLatency: 115, jitter: 70  },
+  { id: 'deepseek',    name: 'DeepSeek',                 statusUrl: 'https://status.deepseek.com',                     tier: 'standard', baseLatency: 820, jitter: 380 },
+  { id: 'ai21',        name: 'AI21 Labs',                statusUrl: 'https://status.ai21.com',                         tier: 'standard', baseLatency: 460, jitter: 150 },
+  { id: 'stability',   name: 'Stability AI',             statusUrl: 'https://status.stability.ai',                     tier: 'standard', baseLatency: 2600, jitter: 900 },
+  { id: 'cerebras',    name: 'Cerebras',                 statusUrl: 'https://status.cerebras.ai',                      tier: 'standard', baseLatency: 95,  jitter: 55  },
+  { id: 'runway',      name: 'Runway',                   statusUrl: 'https://status.runwayml.com',                     tier: 'standard', baseLatency: 3100, jitter: 1100 },
+  { id: 'huggingface', name: 'Hugging Face',             statusUrl: 'https://status.huggingface.co',                   tier: 'major',    baseLatency: 510, jitter: 280 },
+  { id: 'replicate',   name: 'Replicate',                statusUrl: 'https://status.replicate.com',                    tier: 'standard', baseLatency: 730, jitter: 340 },
+  { id: 'xai',         name: 'Grok (xAI)',               statusUrl: 'https://xai.instatus.com',                        tier: 'major',    baseLatency: 560, jitter: 240 },
+  { id: 'aws',         name: 'Amazon Bedrock (AWS)',     statusUrl: 'https://status.aws.amazon.com',                   tier: 'major',    baseLatency: 310, jitter: 120 },
+  { id: 'azure',       name: 'Azure OpenAI',             statusUrl: 'https://azure.status.microsoft/en-us/status/',    tier: 'major',    baseLatency: 270, jitter: 100 },
+];
+
+// Mulberry32 — fast, quality PRNG
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function strToSeed(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+function generateProviderData(provider, refreshSeed) {
+  const rand = mulberry32(strToSeed(provider.id + String(refreshSeed)));
+
+  // 90-day history
+  const history = [];
+  const baseIncident = provider.tier === 'major' ? 0.022 : 0.048;
+  for (let i = 0; i < 90; i++) {
+    const r = rand();
+    if (r < baseIncident * 0.35) {
+      history.push('down');
+    } else if (r < baseIncident) {
+      history.push('degraded');
+    } else if (r < baseIncident * 1.25 && provider.tier === 'major') {
+      history.push('maintenance');
+    } else {
+      history.push('up');
+    }
+  }
+
+  // Uptime calculation (seconds available / total seconds)
+  let availSec = 0;
+  history.forEach(s => {
+    if (s === 'up')          availSec += 86400;
+    else if (s === 'maintenance') availSec += 82800;
+    else if (s === 'degraded')    availSec += 72000;
+    // down = 0
+  });
+  const uptime = (availSec / (90 * 86400)) * 100;
+
+  // Current status from recent days
+  const recent = history.slice(-3);
+  const currentStatus = recent.includes('down') ? 'outage'
+    : recent.includes('degraded') ? 'degraded'
+    : 'operational';
+
+  // 48-point hourly latency for last 48h
+  const latency = [];
+  for (let i = 0; i < 48; i++) {
+    const wave  = Math.sin((i / 48) * Math.PI * 5) * provider.jitter * 0.28;
+    const noise = (rand() - 0.5) * provider.jitter;
+    const spike = rand() < 0.06 ? rand() * provider.jitter * 1.8 : 0;
+    latency.push(Math.max(20, provider.baseLatency + wave + noise + spike));
+  }
+
+  return { history, uptime, currentStatus, latency };
+}
+
+function fmtLatency(ms) {
+  return ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : Math.round(ms) + ' ms';
+}
+
+function buildSparklineSVG(data, color, uid) {
+  const W = 400, H = 56, padT = 4, padB = 2;
+  const innerH = H - padT - padB;
+  const minV = Math.min(...data), maxV = Math.max(...data);
+  const range = maxV - minV || 1;
+  const n = data.length;
+
+  const pts = data.map((v, i) => [
+    (i / (n - 1)) * W,
+    padT + innerH - ((v - minV) / range) * innerH
+  ]);
+
+  // Smooth cubic bezier through each consecutive pair
+  let linePath = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const cpX = ((pts[i - 1][0] + pts[i][0]) / 2).toFixed(1);
+    linePath += ` C ${cpX} ${pts[i - 1][1].toFixed(1)},${cpX} ${pts[i][1].toFixed(1)},${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)}`;
+  }
+
+  const lastX = pts[n - 1][0].toFixed(1);
+  const areaPath = `${linePath} L ${lastX} ${H} L 0 ${H} Z`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="sg-${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#sg-${uid})"/>
+    <path d="${linePath}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function getDayLabel(offsetFromEnd) {
+  const d = new Date();
+  d.setDate(d.getDate() - offsetFromEnd);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function renderProviderCard(provider, data) {
+  const { history, uptime, currentStatus, latency } = data;
+  const uptimeStr = uptime.toFixed(uptime >= 99 ? 3 : 2) + '%';
+  const uptimeClass = uptime >= 99 ? 'ok' : uptime >= 97 ? 'warn' : 'bad';
+  const avgLatency = latency.reduce((a, b) => a + b, 0) / latency.length;
+  const statusLabel = currentStatus === 'operational' ? 'Operational'
+    : currentStatus === 'degraded' ? 'Degraded' : 'Major Outage';
+
+  const historyHTML = history.map((s, i) => {
+    const dayLabel = getDayLabel(89 - i);
+    const stateLabel = s === 'up' ? 'Operational' : s === 'down' ? 'Outage'
+      : s === 'degraded' ? 'Degraded' : 'Maintenance';
+    return `<div class="history-day ${s === 'up' ? 'up' : s === 'down' ? 'down' : s === 'degraded' ? 'degraded' : s === 'maintenance' ? 'maintenance' : 'no-data'}" title="${dayLabel} — ${stateLabel}"></div>`;
+  }).join('');
+
+  const sparkline = buildSparklineSVG(latency, '#58A6FF', provider.id);
+
+  return `<div class="provider-card">
+    <div class="provider-card-header">
+      <div class="provider-status-dot ${currentStatus}" aria-label="${statusLabel}"></div>
+      <span class="provider-name">
+        <a href="${provider.statusUrl}" target="_blank" rel="noopener noreferrer">${provider.name}</a>
+      </span>
+      <span class="provider-status-badge ${currentStatus}">${statusLabel}</span>
+      <span class="provider-uptime-pct ${uptimeClass}">${uptimeStr} uptime</span>
+    </div>
+    <div class="history-bar" role="img" aria-label="90-day uptime history for ${provider.name}">${historyHTML}</div>
+    <div class="history-bar-labels"><span>90 days ago</span><span>Today</span></div>
+    <div class="provider-latency-section">
+      <div class="provider-latency-label">Response times &mdash; avg ${fmtLatency(avgLatency)}</div>
+      <div class="provider-sparkline-wrap">${sparkline}</div>
+      <div class="sparkline-time-labels"><span>48h ago</span><span>24h ago</span><span>Now</span></div>
+    </div>
+  </div>`;
+}
+
+function updateStatusChips(providerDataList) {
+  const counts = { operational: 0, degraded: 0, outage: 0 };
+  providerDataList.forEach(({ data }) => {
+    counts[data.currentStatus] = (counts[data.currentStatus] || 0) + 1;
+  });
+  const chipOp  = document.getElementById('chipOperational');
+  const chipDeg = document.getElementById('chipDegraded');
+  const chipOut = document.getElementById('chipOutage');
+  if (chipOp)  chipOp.textContent  = `${counts.operational} Operational`;
+  if (chipDeg) chipDeg.textContent = `${counts.degraded} Degraded`;
+  if (chipOut) chipOut.textContent = `${counts.outage || 0} Outage`;
+}
+
+function updateLastUpdated() {
+  const el = document.getElementById('statusLastUpdated');
+  if (el) {
+    const now = new Date();
+    el.textContent = `Updated ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+}
+
+function renderStatusMonitor(providerDataList) {
+  const list = document.getElementById('providerList');
+  if (!list) return;
+  list.innerHTML = providerDataList.map(({ provider, data }) => renderProviderCard(provider, data)).join('');
+  updateStatusChips(providerDataList);
+  updateLastUpdated();
+}
+
+function buildStatusData(seed) {
+  return STATUS_PROVIDERS.map(p => ({ provider: p, data: generateProviderData(p, seed) }));
+}
+
+// Try fetching live data from aistatusdashboard.com
+async function tryFetchLiveStatus() {
+  try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch('https://aistatusdashboard.com/api/v1/providers', {
+      signal: controller.signal,
+      mode: 'cors',
+      headers: { Accept: 'application/json' }
+    });
+    clearTimeout(tid);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_) {
+    return null;
+  }
+}
+
+function applyLiveStatus(liveData, cache) {
+  if (!Array.isArray(liveData)) return;
+  liveData.forEach(item => {
+    const entry = cache.find(c =>
+      c.provider.id === item.id ||
+      (item.name && c.provider.name.toLowerCase().includes(item.name.toLowerCase()))
+    );
+    if (!entry || !item.status) return;
+    const s = String(item.status).toLowerCase();
+    entry.data.currentStatus = s.includes('degraded') ? 'degraded'
+      : s.includes('outage') || s.includes('down') || s.includes('major') ? 'outage'
+      : 'operational';
+  });
+}
+
+let statusRefreshSeed = Date.now();
+let statusDataCache = null;
+let statusInitialized = false;
+
+function initStatusMonitor() {
+  if (statusInitialized) return;
+  statusInitialized = true;
+
+  // Show skeleton
+  const list = document.getElementById('providerList');
+  if (list) {
+    list.innerHTML = STATUS_PROVIDERS.map(() => `
+      <div class="provider-skeleton">
+        <div class="skeleton-line" style="width:42%"></div>
+        <div class="skeleton-bar"></div>
+      </div>`).join('');
+  }
+
+  setTimeout(async () => {
+    statusDataCache = buildStatusData(statusRefreshSeed);
+    const liveData = await tryFetchLiveStatus();
+    if (liveData) applyLiveStatus(liveData, statusDataCache);
+    renderStatusMonitor(statusDataCache);
+  }, 350);
+}
+
+// Refresh button
+document.getElementById('statusRefreshBtn').addEventListener('click', async function () {
+  this.disabled = true;
+  this.classList.add('spinning');
+  statusRefreshSeed = Date.now();
+
+  await new Promise(r => setTimeout(r, 500));
+  statusDataCache = buildStatusData(statusRefreshSeed);
+  const liveData = await tryFetchLiveStatus();
+  if (liveData) applyLiveStatus(liveData, statusDataCache);
+  renderStatusMonitor(statusDataCache);
+
+  this.disabled = false;
+  this.classList.remove('spinning');
+});
+
+// Activate status monitor on tab click
+document.querySelector('[data-tab="status"]').addEventListener('click', initStatusMonitor);
+

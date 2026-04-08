@@ -3,21 +3,62 @@
    ============================================= */
 
 // ========================
-// TAB SWITCHING
+// TAB SWITCHING + URL ROUTING
 // ========================
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
 
+const VALID_TABS = ['status', 'calculator', 'audit', 'simulator'];
+
+function activateTab(target, pushState) {
+  if (!VALID_TABS.includes(target)) target = 'status';
+  tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+  tabPanels.forEach(p => p.classList.remove('active'));
+  const btn = document.querySelector(`.tab-btn[data-tab="${target}"]`);
+  const panel = document.getElementById(`tab-${target}`);
+  if (btn)   { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
+  if (panel) { panel.classList.add('active'); }
+  if (pushState) {
+    history.pushState({ tab: target }, '', `#${target}`);
+  }
+}
+
 tabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tab;
-    tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
-    tabPanels.forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    btn.setAttribute('aria-selected', 'true');
-    document.getElementById(`tab-${target}`).classList.add('active');
+    activateTab(target, true);
+
+    if (target !== 'simulator' && flowAnimationId) {
+      cancelAnimationFrame(flowAnimationId);
+      flowAnimationId = null;
+    }
+    if (target === 'status') {
+      if (statusInitialized) startStatusAutoRefresh();
+    } else {
+      stopStatusAutoRefresh();
+    }
   });
 });
+
+// Handle browser back/forward
+window.addEventListener('popstate', (e) => {
+  const target = (e.state && e.state.tab) || location.hash.replace('#', '') || 'status';
+  activateTab(target, false);
+  if (target === 'status') {
+    if (statusInitialized) startStatusAutoRefresh();
+  } else {
+    stopStatusAutoRefresh();
+  }
+});
+
+// Read hash on initial load
+(function () {
+  const hash = location.hash.replace('#', '');
+  const target = VALID_TABS.includes(hash) ? hash : 'status';
+  activateTab(target, false);
+  // Replace current history entry so back button works correctly from start
+  history.replaceState({ tab: target }, '', `#${target}`);
+})();
 
 // ========================
 // UTILITY: Format currency
@@ -771,21 +812,6 @@ function runSimulation() {
 }
 
 document.getElementById('runSimBtn').addEventListener('click', runSimulation);
-
-// Clean up animation when switching tabs
-tabBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab !== 'simulator' && flowAnimationId) {
-      cancelAnimationFrame(flowAnimationId);
-      flowAnimationId = null;
-    }
-    if (btn.dataset.tab === 'status') {
-      if (statusInitialized) startStatusAutoRefresh();
-    } else {
-      stopStatusAutoRefresh();
-    }
-  });
-});
 
 
 // ========================

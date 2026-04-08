@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Ops Toolkit — by Lamatic.ai</title>
+  <title>LLM Ops Toolkit — Lamatic</title>
   <meta name="description" content="Interactive tools for managing 20+ LLM APIs in production. Cost calculator, diversity audit, and routing simulator." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,28 +16,22 @@
   <header class="header">
     <div class="header-inner">
       <div class="logo-area">
-        <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-label="LLM Ops Toolkit Logo">
-          <rect x="2" y="2" width="28" height="28" rx="6" stroke="#58A6FF" stroke-width="1.5"/>
-          <circle cx="10" cy="10" r="2.5" fill="#58A6FF"/>
-          <circle cx="22" cy="10" r="2.5" fill="#58A6FF"/>
-          <circle cx="10" cy="22" r="2.5" fill="#58A6FF"/>
-          <circle cx="22" cy="22" r="2.5" fill="#58A6FF"/>
-          <circle cx="16" cy="16" r="3" fill="#58A6FF" opacity="0.6"/>
-          <line x1="10" y1="10" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
-          <line x1="22" y1="10" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
-          <line x1="10" y1="22" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
-          <line x1="22" y1="22" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
-          <line x1="10" y1="10" x2="22" y2="10" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
-          <line x1="22" y1="10" x2="22" y2="22" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
-          <line x1="22" y1="22" x2="10" y2="22" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
-          <line x1="10" y1="22" x2="10" y2="10" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
+        <!-- Lamatic logo: red diamond + wordmark -->
+        <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-label="Lamatic Logo">
+          <polygon points="16,2 30,16 16,30 2,16" fill="#E8192C"/>
+          <polygon points="16,7 25,16 16,25 7,16" fill="#fff" opacity="0.15"/>
+          <polygon points="16,10 22,16 16,22 10,16" fill="#fff" opacity="0.25"/>
         </svg>
         <div class="logo-text">
-          <h1>LLM Ops Toolkit</h1>
-          <span class="logo-subtitle">by Lamatic.ai</span>
+          <h1>Lamatic</h1>
+          <span class="logo-subtitle">LLM Ops Toolkit</span>
         </div>
       </div>
       <nav class="tab-nav" role="tablist">
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="status">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="12" x2="8" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="2" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Provider Status
+        </button>
         <button class="tab-btn" role="tab" aria-selected="false" data-tab="calculator">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Cost Calculator
@@ -49,10 +43,6 @@
         <button class="tab-btn" role="tab" aria-selected="false" data-tab="simulator">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8h3l2-5 2 10 2-7 2 4h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Routing Simulator
-        </button>
-        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="status">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="12" x2="8" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="2" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          Provider Status
         </button>
       </nav>
     </div>

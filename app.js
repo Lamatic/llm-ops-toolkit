@@ -805,7 +805,7 @@ const STATUS_PROVIDERS = [
   { id: 'replicate',   name: 'Replicate',                statusUrl: 'https://status.replicate.com',                    tier: 'standard', baseLatency: 730, jitter: 340 },
   { id: 'xai',         name: 'Grok (xAI)',               statusUrl: 'https://xai.instatus.com',                        tier: 'major',    baseLatency: 560, jitter: 240 },
   { id: 'aws',         name: 'Amazon Bedrock (AWS)',     statusUrl: 'https://status.aws.amazon.com',                   tier: 'major',    baseLatency: 310, jitter: 120 },
-  { id: 'azure',       name: 'Azure OpenAI',             statusUrl: 'https://azure.status.microsoft/en-us/status/',    tier: 'major',    baseLatency: 270, jitter: 100 },
+  { id: 'azure',       name: 'Azure OpenAI',             statusUrl: 'https://azure.status.microsoft.com/en-us/status/',  tier: 'major',    baseLatency: 270, jitter: 100 },
 ];
 
 // Mulberry32 — fast, quality PRNG
@@ -830,6 +830,7 @@ function generateProviderData(provider, refreshSeed) {
 
   // 90-day history
   const history = [];
+  // Daily incident probability: 2.2% for major providers, 4.8% for standard providers
   const baseIncident = provider.tier === 'major' ? 0.022 : 0.048;
   for (let i = 0; i < 90; i++) {
     const r = rand();
@@ -844,13 +845,13 @@ function generateProviderData(provider, refreshSeed) {
     }
   }
 
-  // Uptime calculation (seconds available / total seconds)
+  // Uptime calculation (seconds available / total seconds in 90 days)
   let availSec = 0;
   history.forEach(s => {
-    if (s === 'up')          availSec += 86400;
-    else if (s === 'maintenance') availSec += 82800;
-    else if (s === 'degraded')    availSec += 72000;
-    // down = 0
+    if (s === 'up')               availSec += 86400;        // 24 h fully available
+    else if (s === 'maintenance') availSec += 82800;        // ~23 h (1 h window)
+    else if (s === 'degraded')    availSec += 72000;        // ~20 h (4 h partial outage)
+    // down: 0 h credited
   });
   const uptime = (availSec / (90 * 86400)) * 100;
 
@@ -872,7 +873,7 @@ function generateProviderData(provider, refreshSeed) {
   return { history, uptime, currentStatus, latency };
 }
 
-function fmtLatency(ms) {
+function formatLatency(ms) {
   return ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : Math.round(ms) + ' ms';
 }
 
@@ -916,6 +917,16 @@ function getDayLabel(offsetFromEnd) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
+// Escape HTML to prevent XSS when inserting values into innerHTML
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderProviderCard(provider, data) {
   const { history, uptime, currentStatus, latency } = data;
   const uptimeStr = uptime.toFixed(uptime >= 99 ? 3 : 2) + '%';
@@ -924,28 +935,35 @@ function renderProviderCard(provider, data) {
   const statusLabel = currentStatus === 'operational' ? 'Operational'
     : currentStatus === 'degraded' ? 'Degraded' : 'Major Outage';
 
+  const safeName      = escapeHTML(provider.name);
+  const safeStatusUrl = escapeHTML(provider.statusUrl);
+  const safeStatus    = escapeHTML(currentStatus);
+  const safeLabel     = escapeHTML(statusLabel);
+
   const historyHTML = history.map((s, i) => {
     const dayLabel = getDayLabel(89 - i);
     const stateLabel = s === 'up' ? 'Operational' : s === 'down' ? 'Outage'
       : s === 'degraded' ? 'Degraded' : 'Maintenance';
-    return `<div class="history-day ${s === 'up' ? 'up' : s === 'down' ? 'down' : s === 'degraded' ? 'degraded' : s === 'maintenance' ? 'maintenance' : 'no-data'}" title="${dayLabel} — ${stateLabel}"></div>`;
+    const cls = s === 'up' ? 'up' : s === 'down' ? 'down'
+      : s === 'degraded' ? 'degraded' : s === 'maintenance' ? 'maintenance' : 'no-data';
+    return `<div class="history-day ${cls}" title="${escapeHTML(dayLabel)} — ${escapeHTML(stateLabel)}"></div>`;
   }).join('');
 
   const sparkline = buildSparklineSVG(latency, '#58A6FF', provider.id);
 
   return `<div class="provider-card">
     <div class="provider-card-header">
-      <div class="provider-status-dot ${currentStatus}" aria-label="${statusLabel}"></div>
+      <div class="provider-status-dot ${safeStatus}" aria-label="${safeLabel}"></div>
       <span class="provider-name">
-        <a href="${provider.statusUrl}" target="_blank" rel="noopener noreferrer">${provider.name}</a>
+        <a href="${safeStatusUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>
       </span>
-      <span class="provider-status-badge ${currentStatus}">${statusLabel}</span>
+      <span class="provider-status-badge ${safeStatus}">${safeLabel}</span>
       <span class="provider-uptime-pct ${uptimeClass}">${uptimeStr} uptime</span>
     </div>
-    <div class="history-bar" role="img" aria-label="90-day uptime history for ${provider.name}">${historyHTML}</div>
+    <div class="history-bar" role="img" aria-label="90-day uptime history for ${safeName}">${historyHTML}</div>
     <div class="history-bar-labels"><span>90 days ago</span><span>Today</span></div>
     <div class="provider-latency-section">
-      <div class="provider-latency-label">Response times &mdash; avg ${fmtLatency(avgLatency)}</div>
+      <div class="provider-latency-label">Response times &mdash; avg ${formatLatency(avgLatency)}</div>
       <div class="provider-sparkline-wrap">${sparkline}</div>
       <div class="sparkline-time-labels"><span>48h ago</span><span>24h ago</span><span>Now</span></div>
     </div>

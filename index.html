@@ -38,7 +38,7 @@
         </div>
       </div>
       <nav class="tab-nav" role="tablist">
-        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="calculator">
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="calculator">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Cost Calculator
         </button>
@@ -50,7 +50,7 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8h3l2-5 2 10 2-7 2 4h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Routing Simulator
         </button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="status">
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="status">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="12" x2="8" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="2" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Provider Status
         </button>
@@ -62,7 +62,7 @@
   <main class="main">
 
     <!-- ===== TAB 1: COST CALCULATOR ===== -->
-    <section id="tab-calculator" class="tab-panel active" role="tabpanel">
+    <section id="tab-calculator" class="tab-panel" role="tabpanel">
       <div class="section-header">
         <h2>LLM Cost Calculator</h2>
         <p class="section-desc">Discover the true cost of managing multiple LLM providers — beyond API bills.</p>
@@ -407,7 +407,7 @@
     </section>
 
     <!-- ===== TAB 4: AI PROVIDER STATUS MONITOR ===== -->
-    <section id="tab-status" class="tab-panel" role="tabpanel">
+    <section id="tab-status" class="tab-panel active" role="tabpanel">
       <div class="section-header">
         <h2>AI Provider Status</h2>
         <p class="section-desc">Aggregate uptime monitoring across 18 AI API providers — 90-day history with response time trends.</p>
@@ -431,6 +431,10 @@
         </div>
         <div class="status-actions">
           <span class="status-last-updated" id="statusLastUpdated"></span>
+          <span class="status-countdown" id="statusCountdown" aria-live="polite"></span>
+          <button class="notify-btn" id="notifyBtn" aria-label="Subscribe to browser notifications for provider outages">
+            🔔 Notify on Outage
+          </button>
           <button class="refresh-btn" id="statusRefreshBtn" aria-label="Refresh status data">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" id="refreshIcon"><path d="M12 2v3.5H8.5M2 12V8.5H5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 8A5 5 0 1 1 9.5 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
             Refresh

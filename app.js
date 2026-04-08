@@ -779,6 +779,11 @@ tabBtns.forEach(btn => {
       cancelAnimationFrame(flowAnimationId);
       flowAnimationId = null;
     }
+    if (btn.dataset.tab === 'status') {
+      if (statusInitialized) startStatusAutoRefresh();
+    } else {
+      stopStatusAutoRefresh();
+    }
   });
 });
 
@@ -907,7 +912,7 @@ function buildSparklineSVG(data, color, uid) {
       </linearGradient>
     </defs>
     <path d="${areaPath}" fill="url(#sg-${uid})"/>
-    <path d="${linePath}" fill="none" stroke="${color}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="${linePath}" fill="none" stroke="${color}" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round"/>
   </svg>`;
 }
 
@@ -964,7 +969,7 @@ function renderProviderCard(provider, data) {
     <div class="history-bar-labels"><span>90 days ago</span><span>Today</span></div>
     <div class="provider-latency-section">
       <div class="provider-latency-label">Response times &mdash; avg ${formatLatency(avgLatency)}</div>
-      <div class="provider-sparkline-wrap">${sparkline}</div>
+      <div class="provider-sparkline-wrap" data-latency="${escapeHTML(JSON.stringify(latency))}">${sparkline}<div class="sparkline-cursor-line" aria-hidden="true"></div></div>
       <div class="sparkline-time-labels"><span>48h ago</span><span>24h ago</span><span>Now</span></div>
     </div>
   </div>`;
@@ -1040,6 +1045,107 @@ let statusRefreshSeed = Date.now();
 let statusDataCache = null;
 let statusInitialized = false;
 
+// Auto-refresh state
+let statusAutoRefreshTimer = null;
+let statusAutoRefreshCountdown = 60;
+
+// Notification state
+let statusNotifyEnabled = false;
+let statusPrevMap = {}; // { providerId: currentStatus }
+
+// ---- Auto-refresh helpers ----
+
+function updateCountdownBadge() {
+  const el = document.getElementById('statusCountdown');
+  if (el) el.textContent = statusAutoRefreshCountdown > 0 ? `${statusAutoRefreshCountdown}s` : '';
+}
+
+function startStatusAutoRefresh() {
+  stopStatusAutoRefresh();
+  statusAutoRefreshCountdown = 60;
+  updateCountdownBadge();
+  statusAutoRefreshTimer = setInterval(async () => {
+    statusAutoRefreshCountdown--;
+    updateCountdownBadge();
+    if (statusAutoRefreshCountdown <= 0) {
+      statusAutoRefreshCountdown = 60;
+      await doStatusRefresh(false);
+    }
+  }, 1000);
+}
+
+function stopStatusAutoRefresh() {
+  if (statusAutoRefreshTimer) {
+    clearInterval(statusAutoRefreshTimer);
+    statusAutoRefreshTimer = null;
+  }
+  const el = document.getElementById('statusCountdown');
+  if (el) el.textContent = '';
+}
+
+// ---- Notification helpers ----
+
+function updateNotifyButton() {
+  const btn = document.getElementById('notifyBtn');
+  if (!btn) return;
+  if (!('Notification' in window)) { btn.style.display = 'none'; return; }
+  if (Notification.permission === 'granted') {
+    statusNotifyEnabled = true;
+    btn.textContent = '🔔 Alerts On';
+    btn.classList.add('notify-active');
+    btn.classList.remove('notify-blocked');
+    btn.disabled = false;
+  } else if (Notification.permission === 'denied') {
+    statusNotifyEnabled = false;
+    btn.textContent = '🔕 Blocked';
+    btn.classList.remove('notify-active');
+    btn.classList.add('notify-blocked');
+    btn.disabled = true;
+  } else {
+    statusNotifyEnabled = false;
+    btn.textContent = '🔔 Notify on Outage';
+    btn.classList.remove('notify-active', 'notify-blocked');
+    btn.disabled = false;
+  }
+}
+
+function checkOutageNotifications(providerDataList) {
+  if (!statusNotifyEnabled) return;
+  providerDataList.forEach(({ provider, data }) => {
+    const prev = statusPrevMap[provider.id];
+    const curr = data.currentStatus;
+    if (prev !== undefined && prev !== 'outage' && curr === 'outage') {
+      try {
+        new Notification(`⚠️ ${provider.name} is down`, {
+          body: `${provider.name} is experiencing a major outage.`,
+          tag: provider.id
+        });
+      } catch (_) {}
+    }
+    statusPrevMap[provider.id] = curr;
+  });
+}
+
+// ---- Core refresh ----
+
+async function doStatusRefresh(isInit) {
+  statusRefreshSeed = Date.now();
+  statusDataCache = buildStatusData(statusRefreshSeed);
+  const liveData = await tryFetchLiveStatus();
+  if (liveData) applyLiveStatus(liveData, statusDataCache);
+  if (isInit) {
+    // Seed the previous map without firing notifications
+    statusDataCache.forEach(({ provider, data }) => {
+      statusPrevMap[provider.id] = data.currentStatus;
+    });
+  } else {
+    checkOutageNotifications(statusDataCache);
+  }
+  renderStatusMonitor(statusDataCache);
+  statusAutoRefreshCountdown = 60;
+  updateCountdownBadge();
+}
+
 function initStatusMonitor() {
   if (statusInitialized) return;
   statusInitialized = true;
@@ -1055,10 +1161,8 @@ function initStatusMonitor() {
   }
 
   setTimeout(async () => {
-    statusDataCache = buildStatusData(statusRefreshSeed);
-    const liveData = await tryFetchLiveStatus();
-    if (liveData) applyLiveStatus(liveData, statusDataCache);
-    renderStatusMonitor(statusDataCache);
+    await doStatusRefresh(true);
+    startStatusAutoRefresh();
   }, 350);
 }
 
@@ -1066,18 +1170,71 @@ function initStatusMonitor() {
 document.getElementById('statusRefreshBtn').addEventListener('click', async function () {
   this.disabled = true;
   this.classList.add('spinning');
-  statusRefreshSeed = Date.now();
-
-  await new Promise(r => setTimeout(r, 500));
-  statusDataCache = buildStatusData(statusRefreshSeed);
-  const liveData = await tryFetchLiveStatus();
-  if (liveData) applyLiveStatus(liveData, statusDataCache);
-  renderStatusMonitor(statusDataCache);
-
+  await doStatusRefresh(false);
   this.disabled = false;
   this.classList.remove('spinning');
 });
 
-// Activate status monitor on tab click
-document.querySelector('[data-tab="status"]').addEventListener('click', initStatusMonitor);
+// Notification button
+document.getElementById('notifyBtn').addEventListener('click', async function () {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+  updateNotifyButton();
+});
+updateNotifyButton(); // Set initial button state
+
+// ---- Sparkline hover tooltip ----
+const sparkTooltip = document.createElement('div');
+sparkTooltip.id = 'sparkTooltip';
+sparkTooltip.className = 'sparkline-tooltip';
+sparkTooltip.setAttribute('aria-hidden', 'true');
+document.body.appendChild(sparkTooltip);
+
+const providerListEl = document.getElementById('providerList');
+
+providerListEl.addEventListener('mousemove', (e) => {
+  const wrap = e.target.closest('.provider-sparkline-wrap');
+  if (!wrap) return;
+
+  let latencyData;
+  try { latencyData = JSON.parse(wrap.dataset.latency || '[]'); } catch (_) { latencyData = []; }
+  if (!latencyData.length) return;
+
+  const rect = wrap.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const pct = x / rect.width;
+  const idx = Math.min(latencyData.length - 1, Math.round(pct * (latencyData.length - 1)));
+  const val = latencyData[idx];
+  const hoursAgo = 48 - idx;
+  const timeLabel = hoursAgo === 0 ? 'Now' : hoursAgo === 1 ? '1h ago' : `${hoursAgo}h ago`;
+
+  sparkTooltip.innerHTML =
+    `<span class="stt-label">Response time</span>` +
+    `<span class="stt-value">${escapeHTML(formatLatency(val))}</span>` +
+    `<span class="stt-time">${escapeHTML(timeLabel)}</span>`;
+  sparkTooltip.style.display = 'flex';
+  sparkTooltip.style.left = (e.clientX + 14) + 'px';
+  sparkTooltip.style.top = (e.clientY - 56) + 'px';
+
+  const cursorLine = wrap.querySelector('.sparkline-cursor-line');
+  if (cursorLine) {
+    cursorLine.style.opacity = '1';
+    cursorLine.style.left = x + 'px';
+  }
+});
+
+providerListEl.addEventListener('mouseout', (e) => {
+  const wrap = e.target.closest('.provider-sparkline-wrap');
+  if (!wrap) return;
+  if (!wrap.contains(e.relatedTarget)) {
+    sparkTooltip.style.display = 'none';
+    const cursorLine = wrap.querySelector('.sparkline-cursor-line');
+    if (cursorLine) cursorLine.style.opacity = '0';
+  }
+});
+
+// Initialize immediately since status is the default tab
+initStatusMonitor();
 

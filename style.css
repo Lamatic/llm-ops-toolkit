@@ -1192,6 +1192,7 @@ input[type=number] { -moz-appearance: textfield; }
   width: 100%;
   height: 56px;
   overflow: hidden;
+  position: relative;
 }
 
 .provider-sparkline-wrap svg {
@@ -1240,4 +1241,97 @@ input[type=number] { -moz-appearance: textfield; }
   .status-controls { flex-direction: column; align-items: flex-start; }
   .provider-card-header { gap: 8px; }
   .provider-name { font-size: 0.875rem; }
+}
+
+/* Sparkline cursor line */
+.sparkline-cursor-line {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(88, 166, 255, 0.55);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.1s;
+}
+
+/* Sparkline hover tooltip */
+.sparkline-tooltip {
+  position: fixed;
+  display: none;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  pointer-events: none;
+  z-index: 500;
+  box-shadow: var(--shadow-lg);
+  white-space: nowrap;
+}
+
+.stt-label {
+  font-size: 0.625rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.stt-value {
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1.3;
+}
+
+.stt-time {
+  font-size: 0.6875rem;
+  color: var(--text-faint);
+}
+
+/* Auto-refresh countdown badge */
+.status-countdown {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  color: var(--text-faint);
+  min-width: 28px;
+  text-align: right;
+}
+
+/* Notify button */
+.notify-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.notify-btn:hover {
+  border-color: var(--primary);
+  color: var(--text);
+  background: var(--primary-dim);
+}
+
+.notify-btn.notify-active {
+  border-color: var(--success);
+  color: var(--success);
+  background: var(--success-dim);
+}
+
+.notify-btn.notify-blocked {
+  opacity: 0.45;
+  cursor: not-allowed;
 }

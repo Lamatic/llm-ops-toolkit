@@ -1,0 +1,7 @@
+{
+  "name": "llm-ops-toolkit",
+  "compatibility_date": "2026-04-08",
+  "assets": {
+    "directory": "./"
+  }
+}

@@ -3,21 +3,62 @@
    ============================================= */
 
 // ========================
-// TAB SWITCHING
+// TAB SWITCHING + URL ROUTING
 // ========================
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
 
+const VALID_TABS = ['status', 'calculator', 'audit', 'simulator'];
+
+function activateTab(target, pushState) {
+  if (!VALID_TABS.includes(target)) target = 'status';
+  tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+  tabPanels.forEach(p => p.classList.remove('active'));
+  const btn = document.querySelector(`.tab-btn[data-tab="${target}"]`);
+  const panel = document.getElementById(`tab-${target}`);
+  if (btn)   { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
+  if (panel) { panel.classList.add('active'); }
+  if (pushState) {
+    history.pushState({ tab: target }, '', `#${target}`);
+  }
+}
+
 tabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tab;
-    tabBtns.forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
-    tabPanels.forEach(p => p.classList.remove('active'));
-    btn.classList.add('active');
-    btn.setAttribute('aria-selected', 'true');
-    document.getElementById(`tab-${target}`).classList.add('active');
+    activateTab(target, true);
+
+    if (target !== 'simulator' && flowAnimationId) {
+      cancelAnimationFrame(flowAnimationId);
+      flowAnimationId = null;
+    }
+    if (target === 'status') {
+      if (statusInitialized) startStatusAutoRefresh();
+    } else {
+      stopStatusAutoRefresh();
+    }
   });
 });
+
+// Handle browser back/forward
+window.addEventListener('popstate', (e) => {
+  const target = (e.state && e.state.tab) || location.hash.replace('#', '') || 'status';
+  activateTab(target, false);
+  if (target === 'status') {
+    if (statusInitialized) startStatusAutoRefresh();
+  } else {
+    stopStatusAutoRefresh();
+  }
+});
+
+// Read hash on initial load
+(function () {
+  const hash = location.hash.replace('#', '');
+  const target = VALID_TABS.includes(hash) ? hash : 'status';
+  activateTab(target, false);
+  // Replace current history entry so back button works correctly from start
+  history.replaceState({ tab: target }, '', `#${target}`);
+})();
 
 // ========================
 // UTILITY: Format currency
@@ -772,12 +813,454 @@ function runSimulation() {
 
 document.getElementById('runSimBtn').addEventListener('click', runSimulation);
 
-// Clean up animation when switching tabs
-tabBtns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab !== 'simulator' && flowAnimationId) {
-      cancelAnimationFrame(flowAnimationId);
-      flowAnimationId = null;
+
+// ========================
+// TAB 4: STATUS MONITOR
+// ========================
+
+const STATUS_PROVIDERS = [
+  { id: 'openai',      name: 'ChatGPT (OpenAI)',        statusUrl: 'https://status.openai.com',                       tier: 'major',    baseLatency: 450, jitter: 200 },
+  { id: 'anthropic',   name: 'Claude (Anthropic)',       statusUrl: 'https://status.anthropic.com',                    tier: 'major',    baseLatency: 380, jitter: 180 },
+  { id: 'google',      name: 'Gemini (Google)',          statusUrl: 'https://status.cloud.google.com',                 tier: 'major',    baseLatency: 350, jitter: 150 },
+  { id: 'mistral',     name: 'Mistral AI',               statusUrl: 'https://status.mistral.ai',                       tier: 'standard', baseLatency: 420, jitter: 160 },
+  { id: 'cohere',      name: 'Cohere',                   statusUrl: 'https://status.cohere.com',                       tier: 'standard', baseLatency: 390, jitter: 140 },
+  { id: 'meta',        name: 'Meta AI',                  statusUrl: 'https://metastatus.com',                          tier: 'standard', baseLatency: 510, jitter: 200 },
+  { id: 'perplexity',  name: 'Perplexity',               statusUrl: 'https://status.perplexity.com',                   tier: 'standard', baseLatency: 620, jitter: 250 },
+  { id: 'groq',        name: 'Groq',                     statusUrl: 'https://groqstatus.com',                          tier: 'standard', baseLatency: 115, jitter: 70  },
+  { id: 'deepseek',    name: 'DeepSeek',                 statusUrl: 'https://status.deepseek.com',                     tier: 'standard', baseLatency: 820, jitter: 380 },
+  { id: 'ai21',        name: 'AI21 Labs',                statusUrl: 'https://status.ai21.com',                         tier: 'standard', baseLatency: 460, jitter: 150 },
+  { id: 'stability',   name: 'Stability AI',             statusUrl: 'https://status.stability.ai',                     tier: 'standard', baseLatency: 2600, jitter: 900 },
+  { id: 'cerebras',    name: 'Cerebras',                 statusUrl: 'https://status.cerebras.ai',                      tier: 'standard', baseLatency: 95,  jitter: 55  },
+  { id: 'runway',      name: 'Runway',                   statusUrl: 'https://status.runwayml.com',                     tier: 'standard', baseLatency: 3100, jitter: 1100 },
+  { id: 'huggingface', name: 'Hugging Face',             statusUrl: 'https://status.huggingface.co',                   tier: 'major',    baseLatency: 510, jitter: 280 },
+  { id: 'replicate',   name: 'Replicate',                statusUrl: 'https://status.replicate.com',                    tier: 'standard', baseLatency: 730, jitter: 340 },
+  { id: 'xai',         name: 'Grok (xAI)',               statusUrl: 'https://xai.instatus.com',                        tier: 'major',    baseLatency: 560, jitter: 240 },
+  { id: 'aws',         name: 'Amazon Bedrock (AWS)',     statusUrl: 'https://status.aws.amazon.com',                   tier: 'major',    baseLatency: 310, jitter: 120 },
+  { id: 'azure',       name: 'Azure OpenAI',             statusUrl: 'https://azure.status.microsoft.com/en-us/status/',  tier: 'major',    baseLatency: 270, jitter: 100 },
+];
+
+// Mulberry32 — fast, quality PRNG
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function strToSeed(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) { h = (Math.imul(31, h) + str.charCodeAt(i)) | 0; }
+  return Math.abs(h);
+}
+
+function generateProviderData(provider, refreshSeed) {
+  const rand = mulberry32(strToSeed(provider.id + String(refreshSeed)));
+
+  // 90-day history
+  const history = [];
+  // Daily incident probability: 2.2% for major providers, 4.8% for standard providers
+  const baseIncident = provider.tier === 'major' ? 0.022 : 0.048;
+  for (let i = 0; i < 90; i++) {
+    const r = rand();
+    if (r < baseIncident * 0.35) {
+      history.push('down');
+    } else if (r < baseIncident) {
+      history.push('degraded');
+    } else if (r < baseIncident * 1.25 && provider.tier === 'major') {
+      history.push('maintenance');
+    } else {
+      history.push('up');
     }
+  }
+
+  // Uptime calculation (seconds available / total seconds in 90 days)
+  let availSec = 0;
+  history.forEach(s => {
+    if (s === 'up')               availSec += 86400;        // 24 h fully available
+    else if (s === 'maintenance') availSec += 82800;        // ~23 h (1 h window)
+    else if (s === 'degraded')    availSec += 72000;        // ~20 h (4 h partial outage)
+    // down: 0 h credited
   });
+  const uptime = (availSec / (90 * 86400)) * 100;
+
+  // Current status from recent days
+  const recent = history.slice(-3);
+  const currentStatus = recent.includes('down') ? 'outage'
+    : recent.includes('degraded') ? 'degraded'
+    : 'operational';
+
+  // 48-point hourly latency for last 48h
+  const latency = [];
+  for (let i = 0; i < 48; i++) {
+    const wave  = Math.sin((i / 48) * Math.PI * 5) * provider.jitter * 0.28;
+    const noise = (rand() - 0.5) * provider.jitter;
+    const spike = rand() < 0.06 ? rand() * provider.jitter * 1.8 : 0;
+    latency.push(Math.max(20, provider.baseLatency + wave + noise + spike));
+  }
+
+  return { history, uptime, currentStatus, latency };
+}
+
+function formatLatency(ms) {
+  return ms >= 1000 ? (ms / 1000).toFixed(2) + ' s' : Math.round(ms) + ' ms';
+}
+
+function buildSparklineSVG(data, color, uid) {
+  const W = 400, H = 56, padT = 4, padB = 2;
+  const innerH = H - padT - padB;
+  const minV = Math.min(...data), maxV = Math.max(...data);
+  const range = maxV - minV || 1;
+  const n = data.length;
+
+  const pts = data.map((v, i) => [
+    (i / (n - 1)) * W,
+    padT + innerH - ((v - minV) / range) * innerH
+  ]);
+
+  // Smooth cubic bezier through each consecutive pair
+  let linePath = `M ${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for (let i = 1; i < pts.length; i++) {
+    const cpX = ((pts[i - 1][0] + pts[i][0]) / 2).toFixed(1);
+    linePath += ` C ${cpX} ${pts[i - 1][1].toFixed(1)},${cpX} ${pts[i][1].toFixed(1)},${pts[i][0].toFixed(1)} ${pts[i][1].toFixed(1)}`;
+  }
+
+  const lastX = pts[n - 1][0].toFixed(1);
+  const areaPath = `${linePath} L ${lastX} ${H} L 0 ${H} Z`;
+
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="sg-${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${color}" stop-opacity="0.22"/>
+        <stop offset="100%" stop-color="${color}" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaPath}" fill="url(#sg-${uid})"/>
+    <path d="${linePath}" fill="none" stroke="${color}" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function getDayLabel(offsetFromEnd) {
+  const d = new Date();
+  d.setDate(d.getDate() - offsetFromEnd);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+// Escape HTML to prevent XSS when inserting values into innerHTML
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderProviderCard(provider, data) {
+  const { history, uptime, currentStatus, latency } = data;
+  const uptimeStr = uptime.toFixed(uptime >= 99 ? 3 : 2) + '%';
+  const uptimeClass = uptime >= 99 ? 'ok' : uptime >= 97 ? 'warn' : 'bad';
+  const avgLatency = latency.reduce((a, b) => a + b, 0) / latency.length;
+  const statusLabel = currentStatus === 'operational' ? 'Operational'
+    : currentStatus === 'degraded' ? 'Degraded' : 'Major Outage';
+
+  const safeName      = escapeHTML(provider.name);
+  const safeStatusUrl = escapeHTML(provider.statusUrl);
+  const safeStatus    = escapeHTML(currentStatus);
+  const safeLabel     = escapeHTML(statusLabel);
+
+  const historyHTML = history.map((s, i) => {
+    const dayLabel = getDayLabel(89 - i);
+    const stateLabel = s === 'up' ? 'Operational' : s === 'down' ? 'Outage'
+      : s === 'degraded' ? 'Degraded' : 'Maintenance';
+    const cls = s === 'up' ? 'up' : s === 'down' ? 'down'
+      : s === 'degraded' ? 'degraded' : s === 'maintenance' ? 'maintenance' : 'no-data';
+    return `<div class="history-day ${cls}" title="${escapeHTML(dayLabel)} — ${escapeHTML(stateLabel)}"></div>`;
+  }).join('');
+
+  const sparkline = buildSparklineSVG(latency, '#58A6FF', provider.id);
+
+  return `<div class="provider-card">
+    <div class="provider-card-header">
+      <div class="provider-status-dot ${safeStatus}" aria-label="${safeLabel}"></div>
+      <span class="provider-name">
+        <a href="${safeStatusUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>
+      </span>
+      <span class="provider-status-badge ${safeStatus}">${safeLabel}</span>
+      <span class="provider-uptime-pct ${uptimeClass}">${uptimeStr} uptime</span>
+    </div>
+    <div class="history-bar" role="img" aria-label="90-day uptime history for ${safeName}">${historyHTML}</div>
+    <div class="history-bar-labels"><span>90 days ago</span><span>Today</span></div>
+    <div class="provider-latency-section">
+      <div class="provider-latency-label">Response times &mdash; avg ${formatLatency(avgLatency)}</div>
+      <div class="provider-sparkline-wrap" data-latency="${escapeHTML(JSON.stringify(latency))}">${sparkline}<div class="sparkline-cursor-line" aria-hidden="true"></div></div>
+      <div class="sparkline-time-labels"><span>48h ago</span><span>24h ago</span><span>Now</span></div>
+    </div>
+  </div>`;
+}
+
+function updateStatusChips(providerDataList) {
+  const counts = { operational: 0, degraded: 0, outage: 0 };
+  providerDataList.forEach(({ data }) => {
+    counts[data.currentStatus] = (counts[data.currentStatus] || 0) + 1;
+  });
+  const chipOp  = document.getElementById('chipOperational');
+  const chipDeg = document.getElementById('chipDegraded');
+  const chipOut = document.getElementById('chipOutage');
+  if (chipOp)  chipOp.textContent  = `${counts.operational} Operational`;
+  if (chipDeg) chipDeg.textContent = `${counts.degraded} Degraded`;
+  if (chipOut) chipOut.textContent = `${counts.outage || 0} Outage`;
+}
+
+function updateLastUpdated() {
+  const el = document.getElementById('statusLastUpdated');
+  if (el) {
+    const now = new Date();
+    el.textContent = `Updated ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+  }
+}
+
+function renderStatusMonitor(providerDataList) {
+  const list = document.getElementById('providerList');
+  if (!list) return;
+  list.innerHTML = providerDataList.map(({ provider, data }) => renderProviderCard(provider, data)).join('');
+  updateStatusChips(providerDataList);
+  updateLastUpdated();
+}
+
+function buildStatusData(seed) {
+  return STATUS_PROVIDERS.map(p => ({ provider: p, data: generateProviderData(p, seed) }));
+}
+
+// Try fetching live data from aistatusdashboard.com
+async function tryFetchLiveStatus() {
+  try {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 4000);
+    const res = await fetch('https://aistatusdashboard.com/api/v1/providers', {
+      signal: controller.signal,
+      mode: 'cors',
+      headers: { Accept: 'application/json' }
+    });
+    clearTimeout(tid);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (_) {
+    return null;
+  }
+}
+
+function applyLiveStatus(liveData, cache) {
+  if (!Array.isArray(liveData)) return;
+  liveData.forEach(item => {
+    const entry = cache.find(c =>
+      c.provider.id === item.id ||
+      (item.name && c.provider.name.toLowerCase().includes(item.name.toLowerCase()))
+    );
+    if (!entry || !item.status) return;
+    const s = String(item.status).toLowerCase();
+    entry.data.currentStatus = s.includes('degraded') ? 'degraded'
+      : s.includes('outage') || s.includes('down') || s.includes('major') ? 'outage'
+      : 'operational';
+  });
+}
+
+let statusRefreshSeed = Date.now();
+let statusDataCache = null;
+let statusInitialized = false;
+
+// Auto-refresh state
+let statusAutoRefreshTimer = null;
+let statusAutoRefreshCountdown = 60;
+
+// Notification state
+let statusNotifyEnabled = false;
+let statusPrevMap = {}; // { providerId: currentStatus }
+
+// ---- Auto-refresh helpers ----
+
+function updateCountdownBadge() {
+  const el = document.getElementById('statusCountdown');
+  if (el) el.textContent = statusAutoRefreshCountdown > 0 ? `${statusAutoRefreshCountdown}s` : '';
+}
+
+function startStatusAutoRefresh() {
+  stopStatusAutoRefresh();
+  statusAutoRefreshCountdown = 60;
+  updateCountdownBadge();
+  statusAutoRefreshTimer = setInterval(async () => {
+    statusAutoRefreshCountdown--;
+    updateCountdownBadge();
+    if (statusAutoRefreshCountdown <= 0) {
+      statusAutoRefreshCountdown = 60;
+      await doStatusRefresh(false);
+    }
+  }, 1000);
+}
+
+function stopStatusAutoRefresh() {
+  if (statusAutoRefreshTimer) {
+    clearInterval(statusAutoRefreshTimer);
+    statusAutoRefreshTimer = null;
+  }
+  const el = document.getElementById('statusCountdown');
+  if (el) el.textContent = '';
+}
+
+// ---- Notification helpers ----
+
+function updateNotifyButton() {
+  const btn = document.getElementById('notifyBtn');
+  if (!btn) return;
+  if (!('Notification' in window)) { btn.style.display = 'none'; return; }
+  if (Notification.permission === 'granted') {
+    statusNotifyEnabled = true;
+    btn.textContent = '🔔 Alerts On';
+    btn.classList.add('notify-active');
+    btn.classList.remove('notify-blocked');
+    btn.disabled = false;
+  } else if (Notification.permission === 'denied') {
+    statusNotifyEnabled = false;
+    btn.textContent = '🔕 Blocked';
+    btn.classList.remove('notify-active');
+    btn.classList.add('notify-blocked');
+    btn.disabled = true;
+  } else {
+    statusNotifyEnabled = false;
+    btn.textContent = '🔔 Notify on Outage';
+    btn.classList.remove('notify-active', 'notify-blocked');
+    btn.disabled = false;
+  }
+}
+
+function checkOutageNotifications(providerDataList) {
+  if (!statusNotifyEnabled) return;
+  providerDataList.forEach(({ provider, data }) => {
+    const prev = statusPrevMap[provider.id];
+    const curr = data.currentStatus;
+    if (prev !== undefined && prev !== 'outage' && curr === 'outage') {
+      try {
+        new Notification(`⚠️ ${provider.name} is down`, {
+          body: `${provider.name} is experiencing a major outage.`,
+          tag: provider.id
+        });
+      } catch (_) {}
+    }
+    statusPrevMap[provider.id] = curr;
+  });
+}
+
+// ---- Core refresh ----
+
+async function doStatusRefresh(isInit) {
+  statusRefreshSeed = Date.now();
+  statusDataCache = buildStatusData(statusRefreshSeed);
+  const liveData = await tryFetchLiveStatus();
+  if (liveData) applyLiveStatus(liveData, statusDataCache);
+  if (isInit) {
+    // Seed the previous map without firing notifications
+    statusDataCache.forEach(({ provider, data }) => {
+      statusPrevMap[provider.id] = data.currentStatus;
+    });
+  } else {
+    checkOutageNotifications(statusDataCache);
+  }
+  renderStatusMonitor(statusDataCache);
+  statusAutoRefreshCountdown = 60;
+  updateCountdownBadge();
+}
+
+function initStatusMonitor() {
+  if (statusInitialized) return;
+  statusInitialized = true;
+
+  // Show skeleton
+  const list = document.getElementById('providerList');
+  if (list) {
+    list.innerHTML = STATUS_PROVIDERS.map(() => `
+      <div class="provider-skeleton">
+        <div class="skeleton-line" style="width:42%"></div>
+        <div class="skeleton-bar"></div>
+      </div>`).join('');
+  }
+
+  setTimeout(async () => {
+    await doStatusRefresh(true);
+    startStatusAutoRefresh();
+  }, 350);
+}
+
+// Refresh button
+document.getElementById('statusRefreshBtn').addEventListener('click', async function () {
+  this.disabled = true;
+  this.classList.add('spinning');
+  await doStatusRefresh(false);
+  this.disabled = false;
+  this.classList.remove('spinning');
 });
+
+// Notification button
+document.getElementById('notifyBtn').addEventListener('click', async function () {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+  updateNotifyButton();
+});
+updateNotifyButton(); // Set initial button state
+
+// ---- Sparkline hover tooltip ----
+const sparkTooltip = document.createElement('div');
+sparkTooltip.id = 'sparkTooltip';
+sparkTooltip.className = 'sparkline-tooltip';
+sparkTooltip.setAttribute('aria-hidden', 'true');
+document.body.appendChild(sparkTooltip);
+
+const providerListEl = document.getElementById('providerList');
+
+providerListEl.addEventListener('mousemove', (e) => {
+  const wrap = e.target.closest('.provider-sparkline-wrap');
+  if (!wrap) return;
+
+  let latencyData;
+  try { latencyData = JSON.parse(wrap.dataset.latency || '[]'); } catch (_) { latencyData = []; }
+  if (!latencyData.length) return;
+
+  const rect = wrap.getBoundingClientRect();
+  const x = Math.max(0, Math.min(rect.width, e.clientX - rect.left));
+  const pct = x / rect.width;
+  const idx = Math.min(latencyData.length - 1, Math.round(pct * (latencyData.length - 1)));
+  const val = latencyData[idx];
+  const hoursAgo = 48 - idx;
+  const timeLabel = hoursAgo === 0 ? 'Now' : hoursAgo === 1 ? '1h ago' : `${hoursAgo}h ago`;
+
+  sparkTooltip.innerHTML =
+    `<span class="stt-label">Response time</span>` +
+    `<span class="stt-value">${escapeHTML(formatLatency(val))}</span>` +
+    `<span class="stt-time">${escapeHTML(timeLabel)}</span>`;
+  sparkTooltip.style.display = 'flex';
+  sparkTooltip.style.left = (e.clientX + 14) + 'px';
+  sparkTooltip.style.top = (e.clientY - 56) + 'px';
+
+  const cursorLine = wrap.querySelector('.sparkline-cursor-line');
+  if (cursorLine) {
+    cursorLine.style.opacity = '1';
+    cursorLine.style.left = x + 'px';
+  }
+});
+
+providerListEl.addEventListener('mouseout', (e) => {
+  const wrap = e.target.closest('.provider-sparkline-wrap');
+  if (!wrap) return;
+  if (!wrap.contains(e.relatedTarget)) {
+    sparkTooltip.style.display = 'none';
+    const cursorLine = wrap.querySelector('.sparkline-cursor-line');
+    if (cursorLine) cursorLine.style.opacity = '0';
+  }
+});
+
+// Initialize immediately since status is the default tab
+initStatusMonitor();
+

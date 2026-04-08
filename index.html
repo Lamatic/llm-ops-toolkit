@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Ops Toolkit — by Lamatic.ai</title>
+  <title>LLM Ops Toolkit — Lamatic</title>
   <meta name="description" content="Interactive tools for managing 20+ LLM APIs in production. Cost calculator, diversity audit, and routing simulator." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -16,29 +16,16 @@
   <header class="header">
     <div class="header-inner">
       <div class="logo-area">
-        <svg class="logo-icon" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-label="LLM Ops Toolkit Logo">
-          <rect x="2" y="2" width="28" height="28" rx="6" stroke="#58A6FF" stroke-width="1.5"/>
-          <circle cx="10" cy="10" r="2.5" fill="#58A6FF"/>
-          <circle cx="22" cy="10" r="2.5" fill="#58A6FF"/>
-          <circle cx="10" cy="22" r="2.5" fill="#58A6FF"/>
-          <circle cx="22" cy="22" r="2.5" fill="#58A6FF"/>
-          <circle cx="16" cy="16" r="3" fill="#58A6FF" opacity="0.6"/>
-          <line x1="10" y1="10" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
-          <line x1="22" y1="10" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
-          <line x1="10" y1="22" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
-          <line x1="22" y1="22" x2="16" y2="16" stroke="#58A6FF" stroke-width="1" opacity="0.4"/>
-          <line x1="10" y1="10" x2="22" y2="10" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
-          <line x1="22" y1="10" x2="22" y2="22" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
-          <line x1="22" y1="22" x2="10" y2="22" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
-          <line x1="10" y1="22" x2="10" y2="10" stroke="#58A6FF" stroke-width="0.75" opacity="0.25"/>
-        </svg>
-        <div class="logo-text">
-          <h1>LLM Ops Toolkit</h1>
-          <span class="logo-subtitle">by Lamatic.ai</span>
-        </div>
+        <a href="https://lamatic.ai" target="_blank" rel="noopener noreferrer" class="logo-link">
+          <img src="https://lamatic.ai/images/brandkitMain/logos/lamatic-logo.svg" alt="Lamatic.ai" class="lamatic-logo" />
+        </a>
       </div>
       <nav class="tab-nav" role="tablist">
-        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="calculator">
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="status">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="12" x2="8" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="2" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Provider Status
+        </button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="calculator">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Cost Calculator
         </button>
@@ -58,7 +45,7 @@
   <main class="main">
 
     <!-- ===== TAB 1: COST CALCULATOR ===== -->
-    <section id="tab-calculator" class="tab-panel active" role="tabpanel">
+    <section id="tab-calculator" class="tab-panel" role="tabpanel">
       <div class="section-header">
         <h2>LLM Cost Calculator</h2>
         <p class="section-desc">Discover the true cost of managing multiple LLM providers — beyond API bills.</p>
@@ -402,11 +389,50 @@
       </div>
     </section>
 
+    <!-- ===== TAB 4: AI PROVIDER STATUS MONITOR ===== -->
+    <section id="tab-status" class="tab-panel active" role="tabpanel">
+      <div class="section-header">
+        <h2>AI Provider Status</h2>
+        <p class="section-desc">Aggregate uptime monitoring across 18 AI API providers — 90-day history with response time trends.</p>
+      </div>
+
+      <!-- Controls row -->
+      <div class="status-controls">
+        <div class="status-summary-chips">
+          <div class="status-chip operational">
+            <div class="status-chip-dot"></div>
+            <span id="chipOperational">— Operational</span>
+          </div>
+          <div class="status-chip degraded">
+            <div class="status-chip-dot"></div>
+            <span id="chipDegraded">— Degraded</span>
+          </div>
+          <div class="status-chip outage">
+            <div class="status-chip-dot"></div>
+            <span id="chipOutage">— Outage</span>
+          </div>
+        </div>
+        <div class="status-actions">
+          <span class="status-last-updated" id="statusLastUpdated"></span>
+          <span class="status-countdown" id="statusCountdown" aria-live="polite"></span>
+          <button class="notify-btn" id="notifyBtn" aria-label="Subscribe to browser notifications for provider outages">
+            🔔 Notify on Outage
+          </button>
+          <button class="refresh-btn" id="statusRefreshBtn" aria-label="Refresh status data">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" id="refreshIcon"><path d="M12 2v3.5H8.5M2 12V8.5H5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M11.5 8A5 5 0 1 1 9.5 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <!-- Provider list (populated by JS) -->
+      <div class="provider-list" id="providerList"></div>
+    </section>
+
   </main>
 
   <!-- ======== FOOTER ======== -->
   <footer class="footer">
-    <p>Built for: <strong>The Hidden Cost of Model Diversity</strong> | Orlando Code Camp 2026</p>
     <p>Powered by <a href="https://lamatic.ai" target="_blank" rel="noopener noreferrer">Lamatic.ai</a> — End-to-End Agent Development Platform</p>
   </footer>
 

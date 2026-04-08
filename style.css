@@ -89,6 +89,7 @@ a:hover { opacity: 0.85; }
   height: 28px;
   width: auto;
   display: block;
+  filter: invert(1);
 }
 
 .tab-nav {

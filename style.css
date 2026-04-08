@@ -76,23 +76,19 @@ a:hover { opacity: 0.85; }
 .logo-area {
   display: flex;
   align-items: center;
-  gap: 12px;
   flex-shrink: 0;
 }
 
-.logo-icon { flex-shrink: 0; }
-
-.logo-text h1 {
-  font-size: 1.125rem;
-  font-weight: 700;
-  line-height: 1.2;
-  letter-spacing: -0.02em;
+.logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
 }
 
-.logo-subtitle {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-  font-weight: 500;
+.lamatic-logo {
+  height: 28px;
+  width: auto;
+  display: block;
 }
 
 .tab-nav {

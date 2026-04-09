@@ -99,10 +99,21 @@ a:hover { opacity: 0.85; }
   gap: 16px;
 }
 
+/* Brand / Logo area */
 .logo-area {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
   flex-shrink: 0;
+  gap: 1px;
+}
+
+.brand-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .logo-brand {
@@ -1064,6 +1075,10 @@ select {
   .savings-grid {
     grid-template-columns: 1fr;
   }
+  .status-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
 
 @media (max-width: 480px) {
@@ -1077,6 +1092,8 @@ select {
     grid-template-columns: 1fr;
   }
   .section-header h2 { font-size: 1.25rem; }
+  /* Hide collapse/expand buttons on very small screens to save space */
+  .layout-btns { display: none; }
 }
 
 /* --- Animated counters --- */
@@ -1178,6 +1195,7 @@ input[type=number] { -moz-appearance: textfield; }
   color: var(--primary);
 }
 
+
 .status-chip-dot {
   width: 8px;
   height: 8px;
@@ -1230,6 +1248,34 @@ input[type=number] { -moz-appearance: textfield; }
 .status-last-updated {
   font-size: 0.75rem;
   color: var(--text-faint);
+}
+
+/* Layout (collapse/expand) buttons */
+.layout-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.layout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.layout-btn:hover {
+  border-color: var(--primary);
+  color: var(--text);
+  background: var(--primary-dim);
 }
 
 .refresh-btn {
@@ -1397,10 +1443,21 @@ input[type=number] { -moz-appearance: textfield; }
   margin-bottom: 12px;
 }
 
-/* Sparkline / response-time section */
+/* Collapsible latency section */
 .provider-latency-section {
   border-top: 1px solid var(--border-light);
   padding-top: 12px;
+  transition: all var(--transition);
+  overflow: hidden;
+}
+
+.provider-latency-section.collapsed {
+  display: none;
+}
+
+/* Provider card collapse toggle */
+.provider-card .provider-card-header {
+  cursor: default;
 }
 
 .provider-latency-label {
@@ -1465,6 +1522,7 @@ input[type=number] { -moz-appearance: textfield; }
   .status-actions { flex-wrap: wrap; gap: 8px; }
   .provider-card-header { gap: 8px; }
   .provider-name { font-size: 0.875rem; }
+  .status-actions { gap: 8px; }
 }
 
 /* Collapsed latency state */

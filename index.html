@@ -8,12 +8,12 @@
   <!-- Open Graph / Social sharing -->
   <meta property="og:title" content="LLM Ops Toolkit — Lamatic.ai" />
   <meta property="og:description" content="Real-time uptime monitoring across 18 AI API providers, cost calculator, routing simulator, and diversity audit." />
-  <meta property="og:image" content="og-image.svg" />
+  <meta property="og:image" content="og-image.svg" id="ogImageMeta" />
   <meta property="og:type" content="website" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="LLM Ops Toolkit — Lamatic.ai" />
   <meta name="twitter:description" content="Real-time AI provider uptime monitoring across 18 providers with 90-day history." />
-  <meta name="twitter:image" content="og-image.svg" />
+  <meta name="twitter:image" content="og-image.svg" id="twitterImageMeta" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -488,6 +488,9 @@
   <footer class="footer">
     <p>Powered by <a href="https://lamatic.ai" target="_blank" rel="noopener noreferrer">Lamatic.ai</a> — End-to-End Agent Development Platform</p>
   </footer>
+
+  <!-- Hidden canvas for OG image generation -->
+  <canvas id="ogCanvas" width="1200" height="630" style="display:none;" aria-hidden="true"></canvas>
 
   <script src="app.js"></script>
 <script data-pplx-inline-edit>

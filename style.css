@@ -1135,8 +1135,6 @@ select {
     grid-template-columns: 1fr;
   }
   .section-header h2 { font-size: 1.25rem; }
-  /* Hide collapse/expand buttons on very small screens to save space */
-  .layout-btns { display: none; }
   .status-controls-top { flex-direction: column; align-items: flex-start; }
   .status-right-actions { flex-wrap: wrap; }
 }
@@ -1313,12 +1311,6 @@ input[type=number] { -moz-appearance: textfield; }
 .status-last-updated {
   font-size: 0.75rem;
   color: var(--text-faint);
-}
-
-/* Layout (collapse/expand) buttons */
-.layout-btns {
-  display: flex;
-  gap: 4px;
 }
 
 .refresh-btn {

@@ -1082,9 +1082,12 @@ function updateStatusChips(providerDataList) {
 }
 
 function updateFavicon(counts) {
-  const color = counts.outage > 0 ? '#F85149'
-    : counts.degraded > 0 ? '#F0883E'
-    : '#3FB950';
+  const style = getComputedStyle(document.documentElement);
+  const color = counts.outage > 0
+    ? style.getPropertyValue('--error').trim()
+    : counts.degraded > 0
+    ? style.getPropertyValue('--secondary').trim()
+    : style.getPropertyValue('--success').trim();
   const faviconLink = document.getElementById('faviconLink');
   if (faviconLink) {
     faviconLink.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='${encodeURIComponent(color)}'/></svg>`;

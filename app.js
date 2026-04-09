@@ -3,11 +3,71 @@
    ============================================= */
 
 // ========================
+// THEME TOGGLE (Light / Dark Mode)
+// ========================
+const themeToggle = document.getElementById('themeToggle');
+const htmlEl = document.documentElement;
+
+function applyTheme(theme) {
+  htmlEl.setAttribute('data-theme', theme);
+  localStorage.setItem('llm-toolkit-theme', theme);
+}
+
+// Load saved theme
+(function () {
+  const saved = localStorage.getItem('llm-toolkit-theme');
+  applyTheme(saved === 'light' ? 'light' : 'dark');
+})();
+
+themeToggle.addEventListener('click', () => {
+  const current = htmlEl.getAttribute('data-theme');
+  applyTheme(current === 'light' ? 'dark' : 'light');
+});
+
+// ========================
+// HAMBURGER MENU (Mobile Nav)
+// ========================
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const tabNav = document.getElementById('tabNav');
+const hamburgerIcon = document.getElementById('hamburgerIcon');
+const closeIcon = document.getElementById('closeIcon');
+
+hamburgerBtn.addEventListener('click', () => {
+  const isOpen = tabNav.classList.toggle('open');
+  hamburgerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  hamburgerIcon.style.display = isOpen ? 'none' : 'block';
+  closeIcon.style.display = isOpen ? 'block' : 'none';
+});
+
+// Close hamburger menu when a tab is clicked
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (tabNav.classList.contains('open')) {
+      tabNav.classList.remove('open');
+      hamburgerBtn.setAttribute('aria-expanded', 'false');
+      hamburgerIcon.style.display = 'block';
+      closeIcon.style.display = 'none';
+    }
+  });
+});
+
+// Close hamburger menu when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.header-right') && tabNav.classList.contains('open')) {
+    tabNav.classList.remove('open');
+    hamburgerBtn.setAttribute('aria-expanded', 'false');
+    hamburgerIcon.style.display = 'block';
+    closeIcon.style.display = 'none';
+  }
+});
+
+// ========================
 // TAB SWITCHING + URL ROUTING
 // ========================
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
 
+// Valid tab IDs for URL routing/validation (display order is defined in index.html)
 const VALID_TABS = ['status', 'simulator', 'calculator', 'audit'];
 
 function activateTab(target, pushState) {
@@ -28,17 +88,6 @@ tabBtns.forEach(btn => {
     const target = btn.dataset.tab;
     activateTab(target, true);
 
-    // Close hamburger menu on mobile
-    const tabNav = document.getElementById('tabNav');
-    const hamburgerBtn = document.getElementById('hamburgerBtn');
-    if (tabNav) tabNav.classList.remove('nav-open');
-    if (hamburgerBtn) {
-      hamburgerBtn.setAttribute('aria-expanded', 'false');
-      const hamburgerIcon = hamburgerBtn.querySelector('.hamburger-icon');
-      const closeIcon = hamburgerBtn.querySelector('.close-icon');
-      if (hamburgerIcon) hamburgerIcon.style.display = '';
-      if (closeIcon) closeIcon.style.display = 'none';
-    }
 
     if (target !== 'simulator' && flowAnimationId) {
       cancelAnimationFrame(flowAnimationId);
@@ -72,62 +121,7 @@ window.addEventListener('popstate', (e) => {
   history.replaceState({ tab: target }, '', `#${target}`);
 })();
 
-// ========================
-// HAMBURGER MENU
-// ========================
-(function () {
-  const hamburgerBtn = document.getElementById('hamburgerBtn');
-  const tabNav = document.getElementById('tabNav');
-  if (!hamburgerBtn || !tabNav) return;
 
-  hamburgerBtn.addEventListener('click', () => {
-    const isOpen = tabNav.classList.toggle('nav-open');
-    hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
-    const hamburgerIcon = hamburgerBtn.querySelector('.hamburger-icon');
-    const closeIcon = hamburgerBtn.querySelector('.close-icon');
-    if (hamburgerIcon) hamburgerIcon.style.display = isOpen ? 'none' : '';
-    if (closeIcon) closeIcon.style.display = isOpen ? '' : 'none';
-  });
-
-  // Close on outside click
-  document.addEventListener('click', (e) => {
-    if (!hamburgerBtn.contains(e.target) && !tabNav.contains(e.target)) {
-      tabNav.classList.remove('nav-open');
-      hamburgerBtn.setAttribute('aria-expanded', 'false');
-      const hamburgerIcon = hamburgerBtn.querySelector('.hamburger-icon');
-      const closeIcon = hamburgerBtn.querySelector('.close-icon');
-      if (hamburgerIcon) hamburgerIcon.style.display = '';
-      if (closeIcon) closeIcon.style.display = 'none';
-    }
-  });
-})();
-
-// ========================
-// LIGHT / DARK MODE TOGGLE
-// ========================
-(function () {
-  const themeToggle = document.getElementById('themeToggle');
-  const darkIcon = document.getElementById('themeIconDark');
-  const lightIcon = document.getElementById('themeIconLight');
-  if (!themeToggle) return;
-
-  // Restore saved preference
-  const savedTheme = localStorage.getItem('llmtk-theme');
-  if (savedTheme === 'light') {
-    document.body.classList.add('light-mode');
-    if (darkIcon) darkIcon.style.display = 'none';
-    if (lightIcon) lightIcon.style.display = '';
-    themeToggle.title = 'Switch to dark mode';
-  }
-
-  themeToggle.addEventListener('click', () => {
-    const isLight = document.body.classList.toggle('light-mode');
-    if (darkIcon) darkIcon.style.display = isLight ? 'none' : '';
-    if (lightIcon) lightIcon.style.display = isLight ? '' : 'none';
-    themeToggle.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
-    localStorage.setItem('llmtk-theme', isLight ? 'light' : 'dark');
-  });
-})();
 
 // ========================
 // UTILITY: Format currency
@@ -887,6 +881,9 @@ document.getElementById('runSimBtn').addEventListener('click', runSimulation);
 // TAB 4: STATUS MONITOR
 // ========================
 
+// Active filter state — declared here so renderStatusMonitor can reference it
+let activeStatusFilter = 'all';
+
 const STATUS_PROVIDERS = [
   { id: 'openai',      name: 'ChatGPT (OpenAI)',        statusUrl: 'https://status.openai.com',                       tier: 'major',    baseLatency: 450, jitter: 200 },
   { id: 'anthropic',   name: 'Claude (Anthropic)',       statusUrl: 'https://status.anthropic.com',                    tier: 'major',    baseLatency: 380, jitter: 180 },
@@ -1051,7 +1048,7 @@ function renderProviderCard(provider, data) {
 
   const sparkline = buildSparklineSVG(latency, '#58A6FF', provider.id);
 
-  return `<div class="provider-card">
+  return `<div class="provider-card" data-status="${safeStatus}">
     <div class="provider-card-header">
       <div class="provider-status-dot ${safeStatus}" aria-label="${safeLabel}"></div>
       <span class="provider-name">
@@ -1097,8 +1094,11 @@ function renderStatusMonitor(providerDataList) {
   list.innerHTML = providerDataList.map(({ provider, data }) => renderProviderCard(provider, data)).join('');
   updateStatusChips(providerDataList);
   updateLastUpdated();
-  // Re-apply any active filter after re-render
-  if (typeof applyStatusFilter === 'function') applyStatusFilter();
+  // Re-apply the current filter after cards are re-rendered
+  const cards = list.querySelectorAll('.provider-card[data-status]');
+  cards.forEach(card => {
+    card.style.display = (activeStatusFilter === 'all' || card.dataset.status === activeStatusFilter) ? '' : 'none';
+  });
   // Generate OG image from current data
   if (typeof generateOGImage === 'function') generateOGImage(providerDataList);
 }
@@ -1338,65 +1338,71 @@ providerListEl.addEventListener('mouseout', (e) => {
 initStatusMonitor();
 
 // ========================
-// STATUS FILTER (chips)
+// STATUS FILTER (Chips)
 // ========================
-let activeStatusFilter = null;
+// Note: activeStatusFilter is declared above (before STATUS_PROVIDERS) so renderStatusMonitor can reference it
 
-const statusChipBtns = [
-  { el: document.getElementById('chipOperationalBtn'), type: 'operational' },
-  { el: document.getElementById('chipDegradedBtn'),    type: 'degraded' },
-  { el: document.getElementById('chipOutageBtn'),      type: 'outage' }
-];
+const filterBtns = {
+  all: document.getElementById('filterAll'),
+  operational: document.getElementById('filterOperational'),
+  degraded: document.getElementById('filterDegraded'),
+  outage: document.getElementById('filterOutage')
+};
 
-function applyStatusFilter() {
-  const cards = document.querySelectorAll('.provider-card');
-  if (!activeStatusFilter) {
-    cards.forEach(card => { card.style.display = ''; });
-    return;
-  }
+function applyStatusFilter(filter) {
+  activeStatusFilter = filter;
+
+  // Update chip active states
+  Object.entries(filterBtns).forEach(([key, btn]) => {
+    if (!btn) return;
+    btn.classList.toggle('active-filter', key === filter);
+    btn.setAttribute('aria-pressed', key === filter ? 'true' : 'false');
+  });
+
+  // Show/hide provider cards
+  const cards = document.querySelectorAll('.provider-card[data-status]');
   cards.forEach(card => {
-    const dot = card.querySelector('.provider-status-dot');
-    const isMatch = dot && dot.classList.contains(activeStatusFilter);
-    card.style.display = isMatch ? '' : 'none';
+    if (filter === 'all' || card.dataset.status === filter) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
   });
 }
 
-statusChipBtns.forEach(({ el, type }) => {
-  if (!el) return;
-  el.addEventListener('click', () => {
-    if (activeStatusFilter === type) {
-      // Toggle off: clear filter
-      activeStatusFilter = null;
-      el.setAttribute('aria-pressed', 'false');
-      el.classList.remove('active-filter');
+Object.entries(filterBtns).forEach(([key, btn]) => {
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    // Toggle off if already active (go back to "all")
+    if (activeStatusFilter === key && key !== 'all') {
+      applyStatusFilter('all');
     } else {
-      // Apply filter
-      activeStatusFilter = type;
-      statusChipBtns.forEach(({ el: other }) => {
-        if (!other) return;
-        other.classList.remove('active-filter');
-        other.setAttribute('aria-pressed', 'false');
-      });
-      el.classList.add('active-filter');
-      el.setAttribute('aria-pressed', 'true');
+      applyStatusFilter(key);
     }
-    applyStatusFilter();
   });
 });
 
 // ========================
-// COLLAPSE / EXPAND ALL
+// COLLAPSE / EXPAND ALL LATENCY
 // ========================
-document.getElementById('collapseAllBtn').addEventListener('click', () => {
-  document.querySelectorAll('.provider-latency-section').forEach(section => {
-    section.classList.add('collapsed');
-  });
+const collapseAllBtn = document.getElementById('collapseAllBtn');
+const expandAllBtn = document.getElementById('expandAllBtn');
+const providerListContainer = document.getElementById('providerList');
+
+collapseAllBtn.addEventListener('click', () => {
+  providerListContainer.classList.add('latency-collapsed');
+  collapseAllBtn.style.opacity = '0.5';
+  collapseAllBtn.style.pointerEvents = 'none';
+  expandAllBtn.style.opacity = '';
+  expandAllBtn.style.pointerEvents = '';
 });
 
-document.getElementById('expandAllBtn').addEventListener('click', () => {
-  document.querySelectorAll('.provider-latency-section').forEach(section => {
-    section.classList.remove('collapsed');
-  });
+expandAllBtn.addEventListener('click', () => {
+  providerListContainer.classList.remove('latency-collapsed');
+  expandAllBtn.style.opacity = '0.5';
+  expandAllBtn.style.pointerEvents = 'none';
+  collapseAllBtn.style.opacity = '';
+  collapseAllBtn.style.pointerEvents = '';
 });
 
 // ========================
@@ -1429,7 +1435,7 @@ function generateOGImage(providerDataList) {
 
   const ctx = canvas.getContext('2d');
   const W = 1200, H = 630;
-  const isDark = !document.body.classList.contains('light-mode');
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
 
   // Background
   ctx.fillStyle = isDark ? '#0D1117' : '#F6F8FA';
@@ -1454,7 +1460,7 @@ function generateOGImage(providerDataList) {
   // Title
   ctx.font = 'bold 36px Inter, system-ui, sans-serif';
   ctx.fillStyle = isDark ? '#E6EDF3' : '#1F2328';
-  ctx.fillText('LLM Toolkit', 48, 56);
+  ctx.fillText('LLM Ops Toolkit', 48, 56);
 
   // Subtitle
   ctx.font = '600 18px Inter, system-ui, sans-serif';
@@ -1483,7 +1489,7 @@ function generateOGImage(providerDataList) {
       : data.currentStatus === 'degraded' ? '#F0883E'
       : '#F85149';
 
-    // Status dot
+    // Status dot (glow + solid)
     ctx.fillStyle = dotColor + '33';
     ctx.beginPath();
     ctx.arc(80, y + 18, 22, 0, Math.PI * 2);
@@ -1543,7 +1549,7 @@ function generateOGImage(providerDataList) {
   ctx.fillText(timeStr, W - 48, H - 20);
   ctx.textAlign = 'left';
 
-  // Update meta tags
+  // Update OG meta tags dynamically
   try {
     const dataUrl = canvas.toDataURL('image/png');
     const ogMeta = document.getElementById('ogImageMeta');

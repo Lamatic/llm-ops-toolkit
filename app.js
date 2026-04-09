@@ -1078,6 +1078,17 @@ function updateStatusChips(providerDataList) {
   if (chipOp)  chipOp.textContent  = `${counts.operational} Operational`;
   if (chipDeg) chipDeg.textContent = `${counts.degraded} Degraded`;
   if (chipOut) chipOut.textContent = `${counts.outage || 0} Outage`;
+  updateFavicon(counts);
+}
+
+function updateFavicon(counts) {
+  const color = counts.outage > 0 ? '#F85149'
+    : counts.degraded > 0 ? '#F0883E'
+    : '#3FB950';
+  const faviconLink = document.getElementById('faviconLink');
+  if (faviconLink) {
+    faviconLink.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='${encodeURIComponent(color)}'/></svg>`;
+  }
 }
 
 function updateLastUpdated() {
@@ -1383,26 +1394,32 @@ Object.entries(filterBtns).forEach(([key, btn]) => {
 });
 
 // ========================
-// COLLAPSE / EXPAND ALL LATENCY
+// COLLAPSE / EXPAND ALL LATENCY — single toggle button
 // ========================
-const collapseAllBtn = document.getElementById('collapseAllBtn');
-const expandAllBtn = document.getElementById('expandAllBtn');
+const layoutToggleBtn = document.getElementById('layoutToggleBtn');
 const providerListContainer = document.getElementById('providerList');
 
-collapseAllBtn.addEventListener('click', () => {
-  providerListContainer.classList.add('latency-collapsed');
-  collapseAllBtn.style.opacity = '0.5';
-  collapseAllBtn.style.pointerEvents = 'none';
-  expandAllBtn.style.opacity = '';
-  expandAllBtn.style.pointerEvents = '';
-});
+// Default: compact (collapsed) mode — latency sections hidden
+providerListContainer.classList.add('latency-collapsed');
 
-expandAllBtn.addEventListener('click', () => {
-  providerListContainer.classList.remove('latency-collapsed');
-  expandAllBtn.style.opacity = '0.5';
-  expandAllBtn.style.pointerEvents = 'none';
-  collapseAllBtn.style.opacity = '';
-  collapseAllBtn.style.pointerEvents = '';
+function updateLayoutToggleIcon(expanded) {
+  const iconExpand   = layoutToggleBtn.querySelector('.layout-icon-expand');
+  const iconCollapse = layoutToggleBtn.querySelector('.layout-icon-collapse');
+  if (iconExpand)   iconExpand.style.display   = expanded ? 'none' : '';
+  if (iconCollapse) iconCollapse.style.display = expanded ? ''     : 'none';
+  layoutToggleBtn.setAttribute('aria-label', expanded ? 'Collapse all providers' : 'Expand all providers');
+  layoutToggleBtn.dataset.expanded = expanded ? 'true' : 'false';
+}
+
+layoutToggleBtn.addEventListener('click', () => {
+  const isExpanded = layoutToggleBtn.dataset.expanded === 'true';
+  if (isExpanded) {
+    providerListContainer.classList.add('latency-collapsed');
+    updateLayoutToggleIcon(false);
+  } else {
+    providerListContainer.classList.remove('latency-collapsed');
+    updateLayoutToggleIcon(true);
+  }
 });
 
 // ========================

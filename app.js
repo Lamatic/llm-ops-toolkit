@@ -67,7 +67,7 @@ document.addEventListener('click', (e) => {
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
 
-// Tabs ordered: Provider Status first, Routing Simulator second (per UX requirement)
+// Valid tab IDs for URL routing/validation (display order is defined in index.html)
 const VALID_TABS = ['status', 'simulator', 'calculator', 'audit'];
 
 function activateTab(target, pushState) {

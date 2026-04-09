@@ -1258,15 +1258,45 @@ input[type=number] { -moz-appearance: textfield; }
   flex-shrink: 0;
 }
 
-/* Icon-only expand/collapse toggle button */
-.layout-toggle-btn {
-  width: 32px;
-  height: 32px;
-  padding: 0;
+/* Compact / Expand pill toggle switch */
+.layout-toggle-switch {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 3px;
+  gap: 2px;
   flex-shrink: 0;
+}
+
+.layout-toggle-opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: none;
+  border-radius: 16px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.layout-toggle-opt:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.layout-toggle-opt.layout-toggle-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
 }
 
 .layout-btn {

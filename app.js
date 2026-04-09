@@ -1079,6 +1079,18 @@ function updateStatusChips(providerDataList) {
   if (chipDeg) chipDeg.textContent = `${counts.degraded} Degraded`;
   if (chipOut) chipOut.textContent = `${counts.outage || 0} Outage`;
   updateFavicon(counts);
+  updateTabTitle(counts);
+}
+
+function updateTabTitle(counts) {
+  const base = 'LLM Ops Toolkit — Lamatic';
+  if (counts.outage > 0) {
+    document.title = `⚠️ ${counts.outage} Down · ${base}`;
+  } else if (counts.degraded > 0) {
+    document.title = `⚡ ${counts.degraded} Degraded · ${base}`;
+  } else {
+    document.title = base;
+  }
 }
 
 function updateFavicon(counts) {
@@ -1397,32 +1409,32 @@ Object.entries(filterBtns).forEach(([key, btn]) => {
 });
 
 // ========================
-// COLLAPSE / EXPAND ALL LATENCY — single toggle button
+// COLLAPSE / EXPAND ALL LATENCY — segmented toggle switch
 // ========================
-const layoutToggleBtn = document.getElementById('layoutToggleBtn');
+const layoutToggleSwitch = document.getElementById('layoutToggleSwitch');
 const providerListContainer = document.getElementById('providerList');
 
 // Default: compact (collapsed) mode — latency sections hidden
 providerListContainer.classList.add('latency-collapsed');
 
-function updateLayoutToggleIcon(expanded) {
-  const iconExpand   = layoutToggleBtn.querySelector('.layout-icon-expand');
-  const iconCollapse = layoutToggleBtn.querySelector('.layout-icon-collapse');
-  if (iconExpand)   iconExpand.style.display   = expanded ? 'none' : '';
-  if (iconCollapse) iconCollapse.style.display = expanded ? ''     : 'none';
-  layoutToggleBtn.setAttribute('aria-label', expanded ? 'Collapse all providers' : 'Expand all providers');
-  layoutToggleBtn.dataset.expanded = expanded ? 'true' : 'false';
+function setLayoutMode(mode) {
+  const opts = layoutToggleSwitch.querySelectorAll('.layout-toggle-opt');
+  opts.forEach(opt => {
+    const isActive = opt.dataset.mode === mode;
+    opt.classList.toggle('layout-toggle-active', isActive);
+    opt.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+  if (mode === 'expand') {
+    providerListContainer.classList.remove('latency-collapsed');
+  } else {
+    providerListContainer.classList.add('latency-collapsed');
+  }
 }
 
-layoutToggleBtn.addEventListener('click', () => {
-  const isExpanded = layoutToggleBtn.dataset.expanded === 'true';
-  if (isExpanded) {
-    providerListContainer.classList.add('latency-collapsed');
-    updateLayoutToggleIcon(false);
-  } else {
-    providerListContainer.classList.remove('latency-collapsed');
-    updateLayoutToggleIcon(true);
-  }
+layoutToggleSwitch.addEventListener('click', (e) => {
+  const opt = e.target.closest('.layout-toggle-opt');
+  if (!opt) return;
+  setLayoutMode(opt.dataset.mode);
 });
 
 // ========================

@@ -3,12 +3,72 @@
    ============================================= */
 
 // ========================
+// THEME TOGGLE (Light / Dark Mode)
+// ========================
+const themeToggle = document.getElementById('themeToggle');
+const htmlEl = document.documentElement;
+
+function applyTheme(theme) {
+  htmlEl.setAttribute('data-theme', theme);
+  localStorage.setItem('llm-toolkit-theme', theme);
+}
+
+// Load saved theme
+(function () {
+  const saved = localStorage.getItem('llm-toolkit-theme');
+  applyTheme(saved === 'light' ? 'light' : 'dark');
+})();
+
+themeToggle.addEventListener('click', () => {
+  const current = htmlEl.getAttribute('data-theme');
+  applyTheme(current === 'light' ? 'dark' : 'light');
+});
+
+// ========================
+// HAMBURGER MENU (Mobile Nav)
+// ========================
+const hamburgerBtn = document.getElementById('hamburgerBtn');
+const tabNav = document.getElementById('tabNav');
+const hamburgerIcon = document.getElementById('hamburgerIcon');
+const closeIcon = document.getElementById('closeIcon');
+
+hamburgerBtn.addEventListener('click', () => {
+  const isOpen = tabNav.classList.toggle('open');
+  hamburgerBtn.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+  hamburgerIcon.style.display = isOpen ? 'none' : 'block';
+  closeIcon.style.display = isOpen ? 'block' : 'none';
+});
+
+// Close hamburger menu when a tab is clicked
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (tabNav.classList.contains('open')) {
+      tabNav.classList.remove('open');
+      hamburgerBtn.setAttribute('aria-expanded', 'false');
+      hamburgerIcon.style.display = 'block';
+      closeIcon.style.display = 'none';
+    }
+  });
+});
+
+// Close hamburger menu when clicking outside
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.header-right') && tabNav.classList.contains('open')) {
+    tabNav.classList.remove('open');
+    hamburgerBtn.setAttribute('aria-expanded', 'false');
+    hamburgerIcon.style.display = 'block';
+    closeIcon.style.display = 'none';
+  }
+});
+
+// ========================
 // TAB SWITCHING + URL ROUTING
 // ========================
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
 
-const VALID_TABS = ['status', 'calculator', 'audit', 'simulator'];
+// Valid tab IDs for URL routing/validation (display order is defined in index.html)
+const VALID_TABS = ['status', 'simulator', 'calculator', 'audit'];
 
 function activateTab(target, pushState) {
   if (!VALID_TABS.includes(target)) target = 'status';
@@ -818,6 +878,9 @@ document.getElementById('runSimBtn').addEventListener('click', runSimulation);
 // TAB 4: STATUS MONITOR
 // ========================
 
+// Active filter state — declared here so renderStatusMonitor can reference it
+let activeStatusFilter = 'all';
+
 const STATUS_PROVIDERS = [
   { id: 'openai',      name: 'ChatGPT (OpenAI)',        statusUrl: 'https://status.openai.com',                       tier: 'major',    baseLatency: 450, jitter: 200 },
   { id: 'anthropic',   name: 'Claude (Anthropic)',       statusUrl: 'https://status.anthropic.com',                    tier: 'major',    baseLatency: 380, jitter: 180 },
@@ -982,7 +1045,7 @@ function renderProviderCard(provider, data) {
 
   const sparkline = buildSparklineSVG(latency, '#58A6FF', provider.id);
 
-  return `<div class="provider-card">
+  return `<div class="provider-card" data-status="${safeStatus}">
     <div class="provider-card-header">
       <div class="provider-status-dot ${safeStatus}" aria-label="${safeLabel}"></div>
       <span class="provider-name">
@@ -1028,6 +1091,11 @@ function renderStatusMonitor(providerDataList) {
   list.innerHTML = providerDataList.map(({ provider, data }) => renderProviderCard(provider, data)).join('');
   updateStatusChips(providerDataList);
   updateLastUpdated();
+  // Re-apply the current filter after cards are re-rendered
+  const cards = list.querySelectorAll('.provider-card[data-status]');
+  cards.forEach(card => {
+    card.style.display = (activeStatusFilter === 'all' || card.dataset.status === activeStatusFilter) ? '' : 'none';
+  });
 }
 
 function buildStatusData(seed) {
@@ -1263,4 +1331,72 @@ providerListEl.addEventListener('mouseout', (e) => {
 
 // Initialize immediately since status is the default tab
 initStatusMonitor();
+
+// ========================
+// STATUS FILTER (Chips)
+// ========================
+// Note: activeStatusFilter is declared earlier (in TAB 4 section) so renderStatusMonitor can reference it
+
+const filterBtns = {
+  all: document.getElementById('filterAll'),
+  operational: document.getElementById('filterOperational'),
+  degraded: document.getElementById('filterDegraded'),
+  outage: document.getElementById('filterOutage')
+};
+
+function applyStatusFilter(filter) {
+  activeStatusFilter = filter;
+
+  // Update chip active states
+  Object.entries(filterBtns).forEach(([key, btn]) => {
+    if (!btn) return;
+    btn.classList.toggle('active-filter', key === filter);
+    btn.setAttribute('aria-pressed', key === filter ? 'true' : 'false');
+  });
+
+  // Show/hide provider cards
+  const cards = document.querySelectorAll('.provider-card[data-status]');
+  cards.forEach(card => {
+    if (filter === 'all' || card.dataset.status === filter) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+Object.entries(filterBtns).forEach(([key, btn]) => {
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    // Toggle off if already active (go back to "all")
+    if (activeStatusFilter === key && key !== 'all') {
+      applyStatusFilter('all');
+    } else {
+      applyStatusFilter(key);
+    }
+  });
+});
+
+// ========================
+// COLLAPSE / EXPAND ALL LATENCY
+// ========================
+const collapseAllBtn = document.getElementById('collapseAllBtn');
+const expandAllBtn = document.getElementById('expandAllBtn');
+const providerListContainer = document.getElementById('providerList');
+
+collapseAllBtn.addEventListener('click', () => {
+  providerListContainer.classList.add('latency-collapsed');
+  collapseAllBtn.style.opacity = '0.5';
+  collapseAllBtn.style.pointerEvents = 'none';
+  expandAllBtn.style.opacity = '';
+  expandAllBtn.style.pointerEvents = '';
+});
+
+expandAllBtn.addEventListener('click', () => {
+  providerListContainer.classList.remove('latency-collapsed');
+  expandAllBtn.style.opacity = '0.5';
+  expandAllBtn.style.pointerEvents = 'none';
+  collapseAllBtn.style.opacity = '';
+  collapseAllBtn.style.pointerEvents = '';
+});
 

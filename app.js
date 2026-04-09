@@ -1078,6 +1078,32 @@ function updateStatusChips(providerDataList) {
   if (chipOp)  chipOp.textContent  = `${counts.operational} Operational`;
   if (chipDeg) chipDeg.textContent = `${counts.degraded} Degraded`;
   if (chipOut) chipOut.textContent = `${counts.outage || 0} Outage`;
+  updateFavicon(counts);
+  updateTabTitle(counts);
+}
+
+function updateTabTitle(counts) {
+  const base = 'LLM Ops Toolkit — Lamatic';
+  if (counts.outage > 0) {
+    document.title = `⚠️ ${counts.outage} Down · ${base}`;
+  } else if (counts.degraded > 0) {
+    document.title = `⚡ ${counts.degraded} Degraded · ${base}`;
+  } else {
+    document.title = base;
+  }
+}
+
+function updateFavicon(counts) {
+  const style = getComputedStyle(document.documentElement);
+  const color = counts.outage > 0
+    ? style.getPropertyValue('--error').trim()
+    : counts.degraded > 0
+    ? style.getPropertyValue('--secondary').trim()
+    : style.getPropertyValue('--success').trim();
+  const faviconLink = document.getElementById('faviconLink');
+  if (faviconLink) {
+    faviconLink.href = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='${encodeURIComponent(color)}'/></svg>`;
+  }
 }
 
 function updateLastUpdated() {
@@ -1383,26 +1409,32 @@ Object.entries(filterBtns).forEach(([key, btn]) => {
 });
 
 // ========================
-// COLLAPSE / EXPAND ALL LATENCY
+// COLLAPSE / EXPAND ALL LATENCY — segmented toggle switch
 // ========================
-const collapseAllBtn = document.getElementById('collapseAllBtn');
-const expandAllBtn = document.getElementById('expandAllBtn');
+const layoutToggleSwitch = document.getElementById('layoutToggleSwitch');
 const providerListContainer = document.getElementById('providerList');
 
-collapseAllBtn.addEventListener('click', () => {
-  providerListContainer.classList.add('latency-collapsed');
-  collapseAllBtn.style.opacity = '0.5';
-  collapseAllBtn.style.pointerEvents = 'none';
-  expandAllBtn.style.opacity = '';
-  expandAllBtn.style.pointerEvents = '';
-});
+// Default: compact (collapsed) mode — latency sections hidden
+providerListContainer.classList.add('latency-collapsed');
 
-expandAllBtn.addEventListener('click', () => {
-  providerListContainer.classList.remove('latency-collapsed');
-  expandAllBtn.style.opacity = '0.5';
-  expandAllBtn.style.pointerEvents = 'none';
-  collapseAllBtn.style.opacity = '';
-  collapseAllBtn.style.pointerEvents = '';
+function setLayoutMode(mode) {
+  const opts = layoutToggleSwitch.querySelectorAll('.layout-toggle-opt');
+  opts.forEach(opt => {
+    const isActive = opt.dataset.mode === mode;
+    opt.classList.toggle('layout-toggle-active', isActive);
+    opt.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+  });
+  if (mode === 'expand') {
+    providerListContainer.classList.remove('latency-collapsed');
+  } else {
+    providerListContainer.classList.add('latency-collapsed');
+  }
+}
+
+layoutToggleSwitch.addEventListener('click', (e) => {
+  const opt = e.target.closest('.layout-toggle-opt');
+  if (!opt) return;
+  setLayoutMode(opt.dataset.mode);
 });
 
 // ========================

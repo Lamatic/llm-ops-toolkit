@@ -1,10 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>LLM Ops Toolkit — Lamatic</title>
-  <meta name="description" content="Interactive tools for managing 20+ LLM APIs in production. Cost calculator, diversity audit, and routing simulator." />
+  <meta name="description" content="Real-time AI provider uptime monitoring + cost calculator and routing tools for 18+ LLM APIs in production." />
+  <!-- Open Graph / Social sharing -->
+  <meta property="og:title" content="LLM Ops Toolkit — Lamatic.ai" />
+  <meta property="og:description" content="Real-time uptime monitoring across 18 AI API providers, cost calculator, routing simulator, and diversity audit." />
+  <meta property="og:image" content="og-image.svg" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="LLM Ops Toolkit — Lamatic.ai" />
+  <meta name="twitter:description" content="Real-time AI provider uptime monitoring across 18 providers with 90-day history." />
+  <meta name="twitter:image" content="og-image.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -16,28 +25,56 @@
   <header class="header">
     <div class="header-inner">
       <div class="logo-area">
-        <a href="https://lamatic.ai" target="_blank" rel="noopener noreferrer" class="logo-link">
-          <img src="https://lamatic.ai/images/brandkitMain/logos/lamatic-logo.svg" alt="Lamatic.ai" class="lamatic-logo" />
-        </a>
+        <div class="logo-brand">
+          <span class="logo-title">LLM toolkit</span>
+          <a href="https://lamatic.ai" target="_blank" rel="noopener noreferrer" class="logo-byline">
+            by <img src="https://lamatic.ai/images/brandkitMain/logos/lamatic-logo.svg" alt="Lamatic.ai" class="lamatic-logo-sm" />
+          </a>
+        </div>
       </div>
-      <nav class="tab-nav" role="tablist">
-        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="status">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="12" x2="8" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="2" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          Provider Status
+      <div class="header-right">
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation menu" aria-expanded="false">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" id="hamburgerIcon">
+            <rect x="3" y="5" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+            <rect x="3" y="9.25" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+            <rect x="3" y="13.5" width="14" height="1.5" rx="0.75" fill="currentColor"/>
+          </svg>
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" id="closeIcon" style="display:none;">
+            <path d="M4 4l12 12M16 4L4 16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
         </button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="calculator">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-          Cost Calculator
+        <nav class="tab-nav" id="tabNav" role="tablist">
+          <button class="tab-btn active" role="tab" aria-selected="true" data-tab="status">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="12" x2="8" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="2" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Provider Status
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" data-tab="simulator">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8h3l2-5 2 10 2-7 2 4h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Routing Simulator
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" data-tab="calculator">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            Cost Calculator
+          </button>
+          <button class="tab-btn" role="tab" aria-selected="false" data-tab="audit">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 3h4l-3 3 1 4-4-2-4 2 1-4-3-3h4l2-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+            Diversity Audit
+          </button>
+        </nav>
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
+          <!-- Sun icon (shown in dark mode) -->
+          <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </svg>
+          <!-- Moon icon (shown in light mode) -->
+          <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
+          </svg>
         </button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="audit">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 3h4l-3 3 1 4-4-2-4 2 1-4-3-3h4l2-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
-          Diversity Audit
-        </button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="simulator">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8h3l2-5 2 10 2-7 2 4h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Routing Simulator
-        </button>
-      </nav>
+      </div>
     </div>
   </header>
 
@@ -398,18 +435,34 @@
 
       <!-- Controls row -->
       <div class="status-controls">
-        <div class="status-summary-chips">
-          <div class="status-chip operational">
-            <div class="status-chip-dot"></div>
-            <span id="chipOperational">— Operational</span>
+        <div class="status-controls-top">
+          <div class="status-summary-chips">
+            <button class="status-chip all-chip active-filter" id="filterAll" aria-pressed="true">
+              <div class="status-chip-dot all-dot"></div>
+              <span>All</span>
+            </button>
+            <button class="status-chip operational" id="filterOperational" aria-pressed="false">
+              <div class="status-chip-dot"></div>
+              <span id="chipOperational">— Operational</span>
+            </button>
+            <button class="status-chip degraded" id="filterDegraded" aria-pressed="false">
+              <div class="status-chip-dot"></div>
+              <span id="chipDegraded">— Degraded</span>
+            </button>
+            <button class="status-chip outage" id="filterOutage" aria-pressed="false">
+              <div class="status-chip-dot"></div>
+              <span id="chipOutage">— Outage</span>
+            </button>
           </div>
-          <div class="status-chip degraded">
-            <div class="status-chip-dot"></div>
-            <span id="chipDegraded">— Degraded</span>
-          </div>
-          <div class="status-chip outage">
-            <div class="status-chip-dot"></div>
-            <span id="chipOutage">— Outage</span>
+          <div class="status-layout-actions">
+            <button class="layout-btn" id="expandAllBtn" title="Show latency for all providers">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5l5 4 5-4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 2h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Expand All
+            </button>
+            <button class="layout-btn" id="collapseAllBtn" title="Hide latency for all providers">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9l5-4 5 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 12h10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              Collapse All
+            </button>
           </div>
         </div>
         <div class="status-actions">

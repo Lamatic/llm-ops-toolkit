@@ -67,6 +67,7 @@ document.addEventListener('click', (e) => {
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
 
+// Tabs ordered: Provider Status first, Routing Simulator second (per UX requirement)
 const VALID_TABS = ['status', 'simulator', 'calculator', 'audit'];
 
 function activateTab(target, pushState) {
@@ -877,6 +878,9 @@ document.getElementById('runSimBtn').addEventListener('click', runSimulation);
 // TAB 4: STATUS MONITOR
 // ========================
 
+// Active filter state — declared here so renderStatusMonitor can reference it
+let activeStatusFilter = 'all';
+
 const STATUS_PROVIDERS = [
   { id: 'openai',      name: 'ChatGPT (OpenAI)',        statusUrl: 'https://status.openai.com',                       tier: 'major',    baseLatency: 450, jitter: 200 },
   { id: 'anthropic',   name: 'Claude (Anthropic)',       statusUrl: 'https://status.anthropic.com',                    tier: 'major',    baseLatency: 380, jitter: 180 },
@@ -1087,11 +1091,10 @@ function renderStatusMonitor(providerDataList) {
   list.innerHTML = providerDataList.map(({ provider, data }) => renderProviderCard(provider, data)).join('');
   updateStatusChips(providerDataList);
   updateLastUpdated();
-  // Re-apply filter after re-render (activeStatusFilter defined later but called after timeout)
+  // Re-apply the current filter after cards are re-rendered
   const cards = list.querySelectorAll('.provider-card[data-status]');
   cards.forEach(card => {
-    const filter = window._llmStatusFilter || 'all';
-    card.style.display = (filter === 'all' || card.dataset.status === filter) ? '' : 'none';
+    card.style.display = (activeStatusFilter === 'all' || card.dataset.status === activeStatusFilter) ? '' : 'none';
   });
 }
 
@@ -1332,8 +1335,7 @@ initStatusMonitor();
 // ========================
 // STATUS FILTER (Chips)
 // ========================
-let activeStatusFilter = 'all';
-window._llmStatusFilter = 'all';
+// Note: activeStatusFilter is declared earlier (in TAB 4 section) so renderStatusMonitor can reference it
 
 const filterBtns = {
   all: document.getElementById('filterAll'),
@@ -1344,7 +1346,6 @@ const filterBtns = {
 
 function applyStatusFilter(filter) {
   activeStatusFilter = filter;
-  window._llmStatusFilter = filter;
 
   // Update chip active states
   Object.entries(filterBtns).forEach(([key, btn]) => {

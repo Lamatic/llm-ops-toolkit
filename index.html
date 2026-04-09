@@ -3,8 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>LLM Ops Toolkit — Lamatic</title>
-  <meta name="description" content="Interactive tools for managing 20+ LLM APIs in production. Cost calculator, diversity audit, and routing simulator." />
+  <title>LLM Toolkit — Lamatic</title>
+  <meta name="description" content="Interactive tools for managing 20+ LLM APIs in production. Live provider status, cost calculator, routing simulator, and diversity audit." />
+  <!-- Open Graph / Social Sharing -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="LLM Toolkit — AI Provider Status &amp; Tools" />
+  <meta property="og:description" content="Live uptime monitoring for 18+ AI providers plus cost calculator &amp; routing simulator. By Lamatic.ai." />
+  <meta property="og:image" content="" id="ogImageMeta" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="LLM Toolkit — AI Provider Status &amp; Tools" />
+  <meta name="twitter:description" content="Live uptime monitoring for 18+ AI providers plus cost calculator &amp; routing simulator. By Lamatic.ai." />
+  <meta name="twitter:image" content="" id="twitterImageMeta" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -16,14 +25,21 @@
   <header class="header">
     <div class="header-inner">
       <div class="logo-area">
+        <div class="brand-name">LLM Toolkit</div>
         <a href="https://lamatic.ai" target="_blank" rel="noopener noreferrer" class="logo-link">
+          <span class="brand-by">by</span>
           <img src="https://lamatic.ai/images/brandkitMain/logos/lamatic-logo.svg" alt="Lamatic.ai" class="lamatic-logo" />
         </a>
       </div>
-      <nav class="tab-nav" role="tablist">
+
+      <nav class="tab-nav" role="tablist" id="tabNav">
         <button class="tab-btn active" role="tab" aria-selected="true" data-tab="status">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" fill="currentColor"/><line x1="8" y1="2" x2="8" y2="4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="8" y1="12" x2="8" y2="14" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="2" y1="8" x2="4" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><line x1="12" y1="8" x2="14" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
           Provider Status
+        </button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="simulator">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8h3l2-5 2 10 2-7 2 4h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Routing Simulator
         </button>
         <button class="tab-btn" role="tab" aria-selected="false" data-tab="calculator">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 3a1 1 0 011-1h10a1 1 0 011 1v10a1 1 0 01-1 1H3a1 1 0 01-1-1V3z" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h6M5 8h6M5 11h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
@@ -33,11 +49,20 @@
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 3h4l-3 3 1 4-4-2-4 2 1-4-3-3h4l2-3z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
           Diversity Audit
         </button>
-        <button class="tab-btn" role="tab" aria-selected="false" data-tab="simulator">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 8h3l2-5 2 10 2-7 2 4h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          Routing Simulator
-        </button>
       </nav>
+
+      <div class="header-actions">
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
+          <!-- moon icon (default dark mode) -->
+          <svg id="themeIconDark" width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <!-- sun icon (shown in light mode) -->
+          <svg id="themeIconLight" width="18" height="18" viewBox="0 0 24 24" fill="none" style="display:none;"><circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/><line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="12" y1="21" x2="12" y2="23" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="1" y1="12" x2="3" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="21" y1="12" x2="23" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <button class="hamburger-btn" id="hamburgerBtn" aria-label="Toggle navigation" aria-expanded="false">
+          <svg class="hamburger-icon" width="22" height="22" viewBox="0 0 22 22" fill="none"><line x1="3" y1="6" x2="19" y2="6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="11" x2="19" y2="11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="3" y1="16" x2="19" y2="16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg class="close-icon" width="22" height="22" viewBox="0 0 22 22" fill="none" style="display:none;"><line x1="4" y1="4" x2="18" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="18" y1="4" x2="4" y2="18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -399,22 +424,32 @@
       <!-- Controls row -->
       <div class="status-controls">
         <div class="status-summary-chips">
-          <div class="status-chip operational">
+          <button class="status-chip operational" id="chipOperationalBtn" aria-pressed="false" title="Filter by Operational">
             <div class="status-chip-dot"></div>
             <span id="chipOperational">— Operational</span>
-          </div>
-          <div class="status-chip degraded">
+          </button>
+          <button class="status-chip degraded" id="chipDegradedBtn" aria-pressed="false" title="Filter by Degraded">
             <div class="status-chip-dot"></div>
             <span id="chipDegraded">— Degraded</span>
-          </div>
-          <div class="status-chip outage">
+          </button>
+          <button class="status-chip outage" id="chipOutageBtn" aria-pressed="false" title="Filter by Outage">
             <div class="status-chip-dot"></div>
             <span id="chipOutage">— Outage</span>
-          </div>
+          </button>
         </div>
         <div class="status-actions">
           <span class="status-last-updated" id="statusLastUpdated"></span>
           <span class="status-countdown" id="statusCountdown" aria-live="polite"></span>
+          <div class="layout-btns">
+            <button class="layout-btn" id="collapseAllBtn" title="Hide latency charts">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 9l5-5 5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Collapse
+            </button>
+            <button class="layout-btn" id="expandAllBtn" title="Show latency charts">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2 5l5 5 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Expand
+            </button>
+          </div>
           <button class="notify-btn" id="notifyBtn" aria-label="Subscribe to browser notifications for provider outages">
             🔔 Notify on Outage
           </button>
@@ -435,6 +470,9 @@
   <footer class="footer">
     <p>Powered by <a href="https://lamatic.ai" target="_blank" rel="noopener noreferrer">Lamatic.ai</a> — End-to-End Agent Development Platform</p>
   </footer>
+
+  <!-- Hidden canvas for OG image generation -->
+  <canvas id="ogCanvas" width="1200" height="630" style="display:none;" aria-hidden="true"></canvas>
 
   <script src="app.js"></script>
 <script data-pplx-inline-edit>

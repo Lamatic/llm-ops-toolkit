@@ -8,7 +8,7 @@
 const tabBtns = document.querySelectorAll('.tab-btn');
 const tabPanels = document.querySelectorAll('.tab-panel');
 
-const VALID_TABS = ['status', 'calculator', 'audit', 'simulator'];
+const VALID_TABS = ['status', 'simulator', 'calculator', 'audit'];
 
 function activateTab(target, pushState) {
   if (!VALID_TABS.includes(target)) target = 'status';
@@ -27,6 +27,18 @@ tabBtns.forEach(btn => {
   btn.addEventListener('click', () => {
     const target = btn.dataset.tab;
     activateTab(target, true);
+
+    // Close hamburger menu on mobile
+    const tabNav = document.getElementById('tabNav');
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    if (tabNav) tabNav.classList.remove('nav-open');
+    if (hamburgerBtn) {
+      hamburgerBtn.setAttribute('aria-expanded', 'false');
+      const hamburgerIcon = hamburgerBtn.querySelector('.hamburger-icon');
+      const closeIcon = hamburgerBtn.querySelector('.close-icon');
+      if (hamburgerIcon) hamburgerIcon.style.display = '';
+      if (closeIcon) closeIcon.style.display = 'none';
+    }
 
     if (target !== 'simulator' && flowAnimationId) {
       cancelAnimationFrame(flowAnimationId);
@@ -58,6 +70,63 @@ window.addEventListener('popstate', (e) => {
   activateTab(target, false);
   // Replace current history entry so back button works correctly from start
   history.replaceState({ tab: target }, '', `#${target}`);
+})();
+
+// ========================
+// HAMBURGER MENU
+// ========================
+(function () {
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const tabNav = document.getElementById('tabNav');
+  if (!hamburgerBtn || !tabNav) return;
+
+  hamburgerBtn.addEventListener('click', () => {
+    const isOpen = tabNav.classList.toggle('nav-open');
+    hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
+    const hamburgerIcon = hamburgerBtn.querySelector('.hamburger-icon');
+    const closeIcon = hamburgerBtn.querySelector('.close-icon');
+    if (hamburgerIcon) hamburgerIcon.style.display = isOpen ? 'none' : '';
+    if (closeIcon) closeIcon.style.display = isOpen ? '' : 'none';
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!hamburgerBtn.contains(e.target) && !tabNav.contains(e.target)) {
+      tabNav.classList.remove('nav-open');
+      hamburgerBtn.setAttribute('aria-expanded', 'false');
+      const hamburgerIcon = hamburgerBtn.querySelector('.hamburger-icon');
+      const closeIcon = hamburgerBtn.querySelector('.close-icon');
+      if (hamburgerIcon) hamburgerIcon.style.display = '';
+      if (closeIcon) closeIcon.style.display = 'none';
+    }
+  });
+})();
+
+// ========================
+// LIGHT / DARK MODE TOGGLE
+// ========================
+(function () {
+  const themeToggle = document.getElementById('themeToggle');
+  const darkIcon = document.getElementById('themeIconDark');
+  const lightIcon = document.getElementById('themeIconLight');
+  if (!themeToggle) return;
+
+  // Restore saved preference
+  const savedTheme = localStorage.getItem('llmtk-theme');
+  if (savedTheme === 'light') {
+    document.body.classList.add('light-mode');
+    if (darkIcon) darkIcon.style.display = 'none';
+    if (lightIcon) lightIcon.style.display = '';
+    themeToggle.title = 'Switch to dark mode';
+  }
+
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.body.classList.toggle('light-mode');
+    if (darkIcon) darkIcon.style.display = isLight ? 'none' : '';
+    if (lightIcon) lightIcon.style.display = isLight ? '' : 'none';
+    themeToggle.title = isLight ? 'Switch to dark mode' : 'Switch to light mode';
+    localStorage.setItem('llmtk-theme', isLight ? 'light' : 'dark');
+  });
 })();
 
 // ========================
@@ -1028,6 +1097,10 @@ function renderStatusMonitor(providerDataList) {
   list.innerHTML = providerDataList.map(({ provider, data }) => renderProviderCard(provider, data)).join('');
   updateStatusChips(providerDataList);
   updateLastUpdated();
+  // Re-apply any active filter after re-render
+  if (typeof applyStatusFilter === 'function') applyStatusFilter();
+  // Generate OG image from current data
+  if (typeof generateOGImage === 'function') generateOGImage(providerDataList);
 }
 
 function buildStatusData(seed) {
@@ -1264,3 +1337,221 @@ providerListEl.addEventListener('mouseout', (e) => {
 // Initialize immediately since status is the default tab
 initStatusMonitor();
 
+// ========================
+// STATUS FILTER (chips)
+// ========================
+let activeStatusFilter = null;
+
+const statusChipBtns = [
+  { el: document.getElementById('chipOperationalBtn'), type: 'operational' },
+  { el: document.getElementById('chipDegradedBtn'),    type: 'degraded' },
+  { el: document.getElementById('chipOutageBtn'),      type: 'outage' }
+];
+
+function applyStatusFilter() {
+  const cards = document.querySelectorAll('.provider-card');
+  if (!activeStatusFilter) {
+    cards.forEach(card => { card.style.display = ''; });
+    return;
+  }
+  cards.forEach(card => {
+    const dot = card.querySelector('.provider-status-dot');
+    const isMatch = dot && dot.classList.contains(activeStatusFilter);
+    card.style.display = isMatch ? '' : 'none';
+  });
+}
+
+statusChipBtns.forEach(({ el, type }) => {
+  if (!el) return;
+  el.addEventListener('click', () => {
+    if (activeStatusFilter === type) {
+      // Toggle off: clear filter
+      activeStatusFilter = null;
+      el.setAttribute('aria-pressed', 'false');
+      el.classList.remove('active-filter');
+    } else {
+      // Apply filter
+      activeStatusFilter = type;
+      statusChipBtns.forEach(({ el: other }) => {
+        if (!other) return;
+        other.classList.remove('active-filter');
+        other.setAttribute('aria-pressed', 'false');
+      });
+      el.classList.add('active-filter');
+      el.setAttribute('aria-pressed', 'true');
+    }
+    applyStatusFilter();
+  });
+});
+
+// ========================
+// COLLAPSE / EXPAND ALL
+// ========================
+document.getElementById('collapseAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.provider-latency-section').forEach(section => {
+    section.classList.add('collapsed');
+  });
+});
+
+document.getElementById('expandAllBtn').addEventListener('click', () => {
+  document.querySelectorAll('.provider-latency-section').forEach(section => {
+    section.classList.remove('collapsed');
+  });
+});
+
+// ========================
+// OG IMAGE GENERATION
+// ========================
+
+// Utility: begin a rounded rectangle path (avoids modifying native prototypes)
+function ctxRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (typeof ctx.roundRect === 'function') {
+    ctx.roundRect(x, y, w, h, r);
+  } else {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.arcTo(x + w, y, x + w, y + radius, radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.arcTo(x + w, y + h, x + w - radius, y + h, radius);
+    ctx.lineTo(x + radius, y + h);
+    ctx.arcTo(x, y + h, x, y + h - radius, radius);
+    ctx.lineTo(x, y + radius);
+    ctx.arcTo(x, y, x + radius, y, radius);
+    ctx.closePath();
+  }
+}
+
+function generateOGImage(providerDataList) {
+  const canvas = document.getElementById('ogCanvas');
+  if (!canvas || !canvas.getContext) return;
+
+  const ctx = canvas.getContext('2d');
+  const W = 1200, H = 630;
+  const isDark = !document.body.classList.contains('light-mode');
+
+  // Background
+  ctx.fillStyle = isDark ? '#0D1117' : '#F6F8FA';
+  ctx.fillRect(0, 0, W, H);
+
+  // Subtle grid pattern
+  ctx.strokeStyle = isDark ? 'rgba(48,54,61,0.5)' : 'rgba(208,215,222,0.6)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 60) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += 60) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Header bar
+  ctx.fillStyle = isDark ? '#161B22' : '#FFFFFF';
+  ctx.fillRect(0, 0, W, 90);
+  ctx.fillStyle = isDark ? '#30363D' : '#D0D7DE';
+  ctx.fillRect(0, 90, W, 1);
+
+  // Title
+  ctx.font = 'bold 36px Inter, system-ui, sans-serif';
+  ctx.fillStyle = isDark ? '#E6EDF3' : '#1F2328';
+  ctx.fillText('LLM Toolkit', 48, 56);
+
+  // Subtitle
+  ctx.font = '600 18px Inter, system-ui, sans-serif';
+  ctx.fillStyle = isDark ? '#8B949E' : '#656D76';
+  ctx.fillText('AI Provider Status — Live Uptime Monitor', 48, 80);
+
+  // Section label
+  ctx.font = '600 13px Inter, system-ui, sans-serif';
+  ctx.fillStyle = isDark ? '#484F58' : '#9198A1';
+  ctx.fillText('TOP 5 PROVIDERS', 48, 126);
+
+  // Top 5 providers
+  const top5 = providerDataList.slice(0, 5);
+  top5.forEach(({ provider, data }, i) => {
+    const y = 152 + i * 90;
+    const rowColor = i % 2 === 0
+      ? (isDark ? 'rgba(22,27,34,0.7)' : 'rgba(246,248,250,0.8)')
+      : 'transparent';
+
+    // Row background
+    ctx.fillStyle = rowColor;
+    ctxRoundRect(ctx, 32, y - 18, W - 64, 76, 8);
+    ctx.fill();
+
+    const dotColor = data.currentStatus === 'operational' ? '#3FB950'
+      : data.currentStatus === 'degraded' ? '#F0883E'
+      : '#F85149';
+
+    // Status dot
+    ctx.fillStyle = dotColor + '33';
+    ctx.beginPath();
+    ctx.arc(80, y + 18, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = dotColor;
+    ctx.beginPath();
+    ctx.arc(80, y + 18, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Provider name
+    ctx.font = 'bold 24px Inter, system-ui, sans-serif';
+    ctx.fillStyle = isDark ? '#E6EDF3' : '#1F2328';
+    ctx.fillText(provider.name, 122, y + 14);
+
+    // Status label
+    const statusLabel = data.currentStatus === 'operational' ? 'Operational'
+      : data.currentStatus === 'degraded' ? 'Degraded' : 'Major Outage';
+    ctx.font = '600 14px Inter, system-ui, sans-serif';
+    ctx.fillStyle = dotColor;
+    ctx.fillText(statusLabel, 122, y + 36);
+
+    // Uptime bar background
+    const barX = 600, barY = y + 8, barW = 380, barH = 18;
+    ctx.fillStyle = isDark ? '#21262D' : '#E8ECF0';
+    ctxRoundRect(ctx, barX, barY, barW, barH, 4);
+    ctx.fill();
+
+    // Uptime bar fill
+    const uptimePct = Math.min(data.uptime / 100, 1);
+    ctx.fillStyle = dotColor;
+    ctxRoundRect(ctx, barX, barY, barW * uptimePct, barH, 4);
+    ctx.fill();
+
+    // Uptime percentage text
+    ctx.font = 'bold 20px Inter, system-ui, sans-serif';
+    ctx.fillStyle = dotColor;
+    ctx.textAlign = 'right';
+    ctx.fillText(data.uptime.toFixed(2) + '%', W - 48, y + 26);
+    ctx.textAlign = 'left';
+  });
+
+  // Footer
+  ctx.fillStyle = isDark ? '#161B22' : '#FFFFFF';
+  ctx.fillRect(0, H - 56, W, 56);
+  ctx.fillStyle = isDark ? '#30363D' : '#D0D7DE';
+  ctx.fillRect(0, H - 56, W, 1);
+
+  ctx.font = '500 15px Inter, system-ui, sans-serif';
+  ctx.fillStyle = isDark ? '#8B949E' : '#656D76';
+  ctx.fillText('Powered by Lamatic.ai  ·  LLM Ops Toolkit', 48, H - 20);
+
+  // Timestamp
+  const now = new Date();
+  const timeStr = 'Updated ' + now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    + ' at ' + now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  ctx.textAlign = 'right';
+  ctx.fillText(timeStr, W - 48, H - 20);
+  ctx.textAlign = 'left';
+
+  // Update meta tags
+  try {
+    const dataUrl = canvas.toDataURL('image/png');
+    const ogMeta = document.getElementById('ogImageMeta');
+    const twitterMeta = document.getElementById('twitterImageMeta');
+    if (ogMeta) ogMeta.setAttribute('content', dataUrl);
+    if (twitterMeta) twitterMeta.setAttribute('content', dataUrl);
+  } catch (err) {
+    // Canvas may be tainted by a cross-origin image resource
+    console.warn('OG image generation skipped (canvas tainted):', err);
+  }
+}

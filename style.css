@@ -1629,9 +1629,15 @@ input[type=number] { -moz-appearance: textfield; }
 
 .provider-card-compact {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+}
+
+.compact-card-header {
+  display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 14px;
 }
 
 /* Compact status dot with pulse */
@@ -1691,6 +1697,11 @@ input[type=number] { -moz-appearance: textfield; }
 .compact-uptime.ok   { color: var(--success); }
 .compact-uptime.warn { color: var(--secondary); }
 .compact-uptime.bad  { color: var(--error); }
+
+.compact-history-bar {
+  height: 16px;
+  margin-bottom: 0;
+}
 
 /* Responsive compact grid */
 @media (max-width: 900px) {

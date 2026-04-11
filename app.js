@@ -1034,7 +1034,7 @@ function escapeHTML(str) {
 }
 
 function renderProviderCardCompact(provider, data) {
-  const { uptime, currentStatus } = data;
+  const { history, uptime, currentStatus } = data;
   const uptimeStr = formatUptime(uptime);
   const uptimeClass = uptime >= 99 ? 'ok' : uptime >= 97 ? 'warn' : 'bad';
   const statusLabel = currentStatus === 'operational' ? 'Operational'
@@ -1045,12 +1045,24 @@ function renderProviderCardCompact(provider, data) {
   const safeStatus    = escapeHTML(currentStatus);
   const safeLabel     = escapeHTML(statusLabel);
 
+  const historyHTML = history.map((s, i) => {
+    const dayLabel = getDayLabel(89 - i);
+    const stateLabel = s === 'up' ? 'Operational' : s === 'down' ? 'Outage'
+      : s === 'degraded' ? 'Degraded' : 'Maintenance';
+    const cls = s === 'up' ? 'up' : s === 'down' ? 'down'
+      : s === 'degraded' ? 'degraded' : s === 'maintenance' ? 'maintenance' : 'no-data';
+    return `<div class="history-day ${cls}" title="${escapeHTML(dayLabel)} — ${escapeHTML(stateLabel)}"></div>`;
+  }).join('');
+
   return `<div class="provider-card provider-card-compact" data-status="${safeStatus}">
-    <div class="compact-dot ${safeStatus}" aria-label="${safeLabel}" title="${safeLabel}"></div>
-    <span class="compact-name">
-      <a href="${safeStatusUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>
-    </span>
-    <span class="compact-uptime ${uptimeClass}" title="90-day uptime">${uptimeStr}</span>
+    <div class="compact-card-header">
+      <div class="compact-dot ${safeStatus}" aria-label="${safeLabel}" title="${safeLabel}"></div>
+      <span class="compact-name">
+        <a href="${safeStatusUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>
+      </span>
+      <span class="compact-uptime ${uptimeClass}" title="90-day uptime">${uptimeStr}</span>
+    </div>
+    <div class="history-bar compact-history-bar" role="img" aria-label="90-day uptime history for ${safeName}">${historyHTML}</div>
   </div>`;
 }
 

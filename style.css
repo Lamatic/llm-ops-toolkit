@@ -73,6 +73,31 @@ body {
 a { color: var(--primary); text-decoration: none; transition: opacity var(--transition); }
 a:hover { opacity: 0.85; }
 
+/* --- ProductHunt Banner --- */
+.ph-banner {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 10px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.ph-banner a {
+  display: block;
+  line-height: 0;
+  opacity: 0.92;
+  transition: opacity var(--transition);
+}
+
+.ph-banner a:hover { opacity: 1; }
+
+.ph-banner img {
+  height: 54px;
+  width: auto;
+  display: block;
+}
+
 /* --- GitHub Fork Ribbon --- */
 .github-ribbon {
   position: fixed;
@@ -1593,6 +1618,91 @@ input[type=number] { -moz-appearance: textfield; }
 /* Collapsed latency state */
 .latency-collapsed .provider-latency-section {
   display: none;
+}
+
+/* Compact 3-column grid view */
+.provider-list.view-compact {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.provider-card-compact {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+/* Compact status dot with pulse */
+.compact-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.compact-dot.operational { background: var(--success); }
+.compact-dot.degraded    { background: var(--secondary); }
+.compact-dot.outage      { background: var(--error); }
+
+.compact-dot.operational::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: var(--success);
+  opacity: 0.35;
+  animation: compactPulse 2.2s ease-out infinite;
+}
+
+@keyframes compactPulse {
+  0%   { transform: scale(1); opacity: 0.35; }
+  60%  { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+.compact-name {
+  flex: 1;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-name a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.compact-name a:hover { color: var(--primary); }
+
+.compact-uptime {
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.compact-uptime.ok   { color: var(--success); }
+.compact-uptime.warn { color: var(--secondary); }
+.compact-uptime.bad  { color: var(--error); }
+
+/* Responsive compact grid */
+@media (max-width: 900px) {
+  .provider-list.view-compact {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .provider-list.view-compact {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Sparkline cursor line */

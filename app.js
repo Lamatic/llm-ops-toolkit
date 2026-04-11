@@ -11,6 +11,11 @@ const htmlEl = document.documentElement;
 function applyTheme(theme) {
   htmlEl.setAttribute('data-theme', theme);
   localStorage.setItem('llm-toolkit-theme', theme);
+  // Sync ProductHunt badge theme
+  const phImg = document.getElementById('phBadgeImg');
+  if (phImg) {
+    phImg.src = `https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1119636&theme=${theme}&t=1775910887461`;
+  }
 }
 
 // Load saved theme
@@ -79,7 +84,7 @@ function activateTab(target, pushState) {
   if (btn)   { btn.classList.add('active'); btn.setAttribute('aria-selected', 'true'); }
   if (panel) { panel.classList.add('active'); }
   if (pushState) {
-    history.pushState({ tab: target }, '', `#${target}`);
+    history.pushState({ tab: target }, '', `/${target}`);
   }
 }
 
@@ -103,7 +108,7 @@ tabBtns.forEach(btn => {
 
 // Handle browser back/forward
 window.addEventListener('popstate', (e) => {
-  const target = (e.state && e.state.tab) || location.hash.replace('#', '') || 'status';
+  const target = (e.state && e.state.tab) || location.pathname.slice(1) || 'status';
   activateTab(target, false);
   if (target === 'status') {
     if (statusInitialized) startStatusAutoRefresh();
@@ -112,13 +117,13 @@ window.addEventListener('popstate', (e) => {
   }
 });
 
-// Read hash on initial load
+// Read path on initial load
 (function () {
-  const hash = location.hash.replace('#', '');
-  const target = VALID_TABS.includes(hash) ? hash : 'status';
+  const path = location.pathname.slice(1);
+  const target = VALID_TABS.includes(path) ? path : 'status';
   activateTab(target, false);
   // Replace current history entry so back button works correctly from start
-  history.replaceState({ tab: target }, '', `#${target}`);
+  history.replaceState({ tab: target }, '', `/${target}`);
 })();
 
 
@@ -137,6 +142,10 @@ function formatCurrency(val, compact) {
 
 function formatNumber(val, decimals = 1) {
   return val.toLocaleString('en-US', { maximumFractionDigits: decimals, minimumFractionDigits: decimals });
+}
+
+function formatUptime(uptime) {
+  return uptime.toFixed(uptime >= 99 ? 3 : 2) + '%';
 }
 
 // Animated counter
@@ -1024,9 +1033,42 @@ function escapeHTML(str) {
     .replace(/'/g, '&#39;');
 }
 
+function renderProviderCardCompact(provider, data) {
+  const { history, uptime, currentStatus } = data;
+  const uptimeStr = formatUptime(uptime);
+  const uptimeClass = uptime >= 99 ? 'ok' : uptime >= 97 ? 'warn' : 'bad';
+  const statusLabel = currentStatus === 'operational' ? 'Operational'
+    : currentStatus === 'degraded' ? 'Degraded' : 'Major Outage';
+
+  const safeName      = escapeHTML(provider.name);
+  const safeStatusUrl = escapeHTML(provider.statusUrl);
+  const safeStatus    = escapeHTML(currentStatus);
+  const safeLabel     = escapeHTML(statusLabel);
+
+  const historyHTML = history.map((s, i) => {
+    const dayLabel = getDayLabel(89 - i);
+    const stateLabel = s === 'up' ? 'Operational' : s === 'down' ? 'Outage'
+      : s === 'degraded' ? 'Degraded' : 'Maintenance';
+    const cls = s === 'up' ? 'up' : s === 'down' ? 'down'
+      : s === 'degraded' ? 'degraded' : s === 'maintenance' ? 'maintenance' : 'no-data';
+    return `<div class="history-day ${cls}" title="${escapeHTML(dayLabel)} — ${escapeHTML(stateLabel)}"></div>`;
+  }).join('');
+
+  return `<div class="provider-card provider-card-compact" data-status="${safeStatus}">
+    <div class="compact-card-header">
+      <div class="compact-dot ${safeStatus}" aria-label="${safeLabel}" title="${safeLabel}"></div>
+      <span class="compact-name">
+        <a href="${safeStatusUrl}" target="_blank" rel="noopener noreferrer">${safeName}</a>
+      </span>
+      <span class="compact-uptime ${uptimeClass}" title="90-day uptime">${uptimeStr}</span>
+    </div>
+    <div class="history-bar compact-history-bar" role="img" aria-label="90-day uptime history for ${safeName}">${historyHTML}</div>
+  </div>`;
+}
+
 function renderProviderCard(provider, data) {
   const { history, uptime, currentStatus, latency } = data;
-  const uptimeStr = uptime.toFixed(uptime >= 99 ? 3 : 2) + '%';
+  const uptimeStr = formatUptime(uptime);
   const uptimeClass = uptime >= 99 ? 'ok' : uptime >= 97 ? 'warn' : 'bad';
   const avgLatency = latency.reduce((a, b) => a + b, 0) / latency.length;
   const statusLabel = currentStatus === 'operational' ? 'Operational'
@@ -1117,7 +1159,11 @@ function updateLastUpdated() {
 function renderStatusMonitor(providerDataList) {
   const list = document.getElementById('providerList');
   if (!list) return;
-  list.innerHTML = providerDataList.map(({ provider, data }) => renderProviderCard(provider, data)).join('');
+  list.innerHTML = providerDataList.map(({ provider, data }) =>
+    currentLayoutMode === 'compact'
+      ? renderProviderCardCompact(provider, data)
+      : renderProviderCard(provider, data)
+  ).join('');
   updateStatusChips(providerDataList);
   updateLastUpdated();
   // Re-apply the current filter after cards are re-rendered
@@ -1414,10 +1460,15 @@ Object.entries(filterBtns).forEach(([key, btn]) => {
 const layoutToggleSwitch = document.getElementById('layoutToggleSwitch');
 const providerListContainer = document.getElementById('providerList');
 
-// Default: compact (collapsed) mode — latency sections hidden
+// Track current layout mode; default is compact
+let currentLayoutMode = 'compact';
+
+// Default: compact (collapsed) mode — latency sections hidden, 3-col grid
 providerListContainer.classList.add('latency-collapsed');
+providerListContainer.classList.add('view-compact');
 
 function setLayoutMode(mode) {
+  currentLayoutMode = mode;
   const opts = layoutToggleSwitch.querySelectorAll('.layout-toggle-opt');
   opts.forEach(opt => {
     const isActive = opt.dataset.mode === mode;
@@ -1426,8 +1477,14 @@ function setLayoutMode(mode) {
   });
   if (mode === 'expand') {
     providerListContainer.classList.remove('latency-collapsed');
+    providerListContainer.classList.remove('view-compact');
   } else {
     providerListContainer.classList.add('latency-collapsed');
+    providerListContainer.classList.add('view-compact');
+  }
+  // Re-render cards with correct format if data is available
+  if (statusDataCache) {
+    renderStatusMonitor(statusDataCache);
   }
 }
 
